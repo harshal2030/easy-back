@@ -1,6 +1,13 @@
 import { Model, DataTypes } from 'sequelize';
+import jwt from 'jsonwebtoken';
+import path from 'path';
+import fs from 'fs';
+
 import sequelize from '../db/index';
 import { usernamePattern } from '../utils/regexPatterns';
+
+const privateKeyPath = path.join(__dirname, '../../keys/private.pem');
+const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
 
 interface UserAttr {
   id: number;
@@ -23,6 +30,34 @@ class User extends Model implements UserAttr {
   public password!: string;
 
   public tokens!: string[];
+
+  public readonly createdAt!: Date;
+
+  public readonly updatedAt!: Date;
+
+  public async generateJwt(): Promise<string> {
+    const user = this;
+
+    const token = jwt.sign({ username: user.username.toString() }, privateKey, { algorithm: 'RS256' });
+    user.tokens.push(token);
+
+    await User.update({
+      tokens: user.tokens,
+    }, {
+      where: {
+        username: user.username,
+      },
+    });
+
+    return token;
+  }
+
+  toJSON() {
+    return {
+      name: this.name,
+      username: this.username,
+    };
+  }
 }
 
 User.init({
@@ -61,9 +96,10 @@ User.init({
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      min: {
-        args: [6],
-        msg: 'Very short password',
+      checkPassword(value: string): void {
+        if (value.length < 6) {
+          throw new Error('Password too short');
+        }
       },
     },
   },
@@ -76,6 +112,10 @@ User.init({
   timestamps: true,
 });
 
-sequelize.sync();
+const fn = async () => {
+  await sequelize.sync();
+};
+
+fn();
 
 export { User, UserAttr };
