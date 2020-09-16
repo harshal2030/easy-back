@@ -16,6 +16,15 @@ interface SignUpReq extends Request {
   }
 }
 
+interface LoginReq extends Request {
+  body: {
+    user: {
+      username: string;
+      password: string;
+    }
+  }
+}
+
 router.post('/users/create', async (req: SignUpReq, res: Response) => {
   const queries = Object.keys(req.body.user);
   const allowedQueries = ['name', 'username', 'email', 'password'];
@@ -38,6 +47,17 @@ router.post('/users/create', async (req: SignUpReq, res: Response) => {
       return res.status(400).send({ error: e.message });
     }
     return res.status(500).send();
+  }
+});
+
+router.post('/users/login', async (req: LoginReq, res: Response) => {
+  try {
+    const user = await User.checkUsernameAndPass(req.body.user.username, req.body.user.password);
+    const token = await user.generateJwt();
+
+    res.send({ user, token });
+  } catch (e) {
+    res.status(404).send();
   }
 });
 

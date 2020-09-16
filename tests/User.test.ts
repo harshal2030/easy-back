@@ -56,6 +56,46 @@ describe('Account related tests', () => {
       })
       .expect(400);
   });
+
+  test('Should Log In the user', async () => {
+    const res = await req(app)
+      .post('/users/login')
+      .send({
+        user: {
+          username: user.username,
+          password: user.password,
+        },
+      })
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      user: {
+        name: user.name,
+        username: user.username,
+      },
+      token: expect.any(String),
+    });
+
+    const dbUser = await User.findOne({
+      where: {
+        username: user.username,
+      },
+    });
+
+    expect(dbUser.tokens.length).toBeGreaterThanOrEqual(2);
+  });
+
+  test('Should not login user', async () => {
+    await req(app)
+      .post('/users/login')
+      .send({
+        user: {
+          username: user.username,
+          password: user1.password,
+        },
+      })
+      .expect(404);
+  });
 });
 
 afterAll(truncate);

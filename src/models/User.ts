@@ -1,7 +1,8 @@
-import { Model, DataTypes } from 'sequelize';
+import { Model, DataTypes, Op } from 'sequelize';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
+import { SHA512 } from 'crypto-js';
 
 import sequelize from '../db/index';
 import { usernamePattern } from '../utils/regexPatterns';
@@ -50,6 +51,33 @@ class User extends Model implements UserAttr {
     });
 
     return token;
+  }
+
+  public static async checkUsernameAndPass(username: string, password: string): Promise<User> {
+    const user = await User.findOne({
+      where: {
+        [Op.or]: [
+          {
+            email: username,
+          },
+          {
+            username,
+          },
+        ],
+      },
+    });
+
+    if (!user) {
+      throw new Error('No such user found 1');
+    }
+
+    const encPass = SHA512(`${process.env.salt1}${password}${process.env.salt2}`).toString();
+
+    if (encPass !== user.password) {
+      throw new Error('No such user found');
+    }
+
+    return user;
   }
 
   toJSON() {
@@ -110,6 +138,12 @@ User.init({
 }, {
   sequelize,
   timestamps: true,
+  hooks: {
+    afterValidate: (user) => {
+      // eslint-disable-next-line no-param-reassign
+      user.password = SHA512(`${process.env.salt1}${user.password}${process.env.salt2}`).toString();
+    },
+  },
 });
 
 const fn = async () => {
