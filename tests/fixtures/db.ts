@@ -1,7 +1,9 @@
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
+
 import { User, UserAttr } from '../../src/models/User';
+import sequelize from '../../src/db';
 
 const privateKeyPath = path.join(__dirname, '../../keys/private.pem');
 const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
@@ -34,7 +36,7 @@ const SeedDB = async () => {
 
 const truncate = async () => {
   try {
-    await User.destroy({ truncate: true });
+    await sequelize.sync({ force: true });
   } catch (e) {
     console.log(e);
   }

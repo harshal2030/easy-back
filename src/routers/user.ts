@@ -1,7 +1,8 @@
 import express, { Request, Response } from 'express';
-import { ValidationError, UniqueConstraintError } from 'sequelize';
 
 import { User } from '../models/User';
+
+import { SendOnError } from '../utils/functions';
 
 const router = express.Router();
 
@@ -39,14 +40,7 @@ router.post('/users/create', async (req: SignUpReq, res: Response) => {
 
     return res.status(201).send({ user, token });
   } catch (e) {
-    if (e instanceof ValidationError) {
-      return res.status(400).send({ error: e.message });
-    }
-
-    if (e instanceof UniqueConstraintError) {
-      return res.status(400).send({ error: e.message });
-    }
-    return res.status(500).send();
+    return SendOnError(e, res);
   }
 });
 

@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "env-cmd ./config/dev.env nodemon build/index.js",
-    "build": "tsc --watch",
-    "test": "env-cmd ./config/test.env jest --watchAll --runInBand"
+    "start:dev": "env-cmd ./config/dev.env nodemon build/index.js",
+    "start:build": "tsc --watch",
+    "start": "concurrently npm:start:*",
+    "test": "env-cmd ./config/test.env jest --runInBand --verbose=false"
   },
   "author": "Harshal",
   "license": "ISC",
@@ -14,6 +15,7 @@
     "crypto-js": "^4.0.0",
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
+    "nanoid": "^3.1.12",
     "pg": "^8.3.3",
     "pg-hstore": "^2.3.3",
     "sequelize": "^6.3.5"

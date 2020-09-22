@@ -106,6 +106,7 @@ User.init({
         msg: 'Invalid username pattern. Only underscores, periods are allowed',
       },
     },
+    onDelete: 'CASCADE',
   },
   email: {
     type: DataTypes.STRING,
