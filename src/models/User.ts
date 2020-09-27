@@ -2,10 +2,10 @@ import { Model, DataTypes, Op } from 'sequelize';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
-import { SHA512 } from 'crypto-js';
 
 import sequelize from '../db/index';
 import { usernamePattern } from '../utils/regexPatterns';
+import { generatePassword } from '../utils/functions';
 
 const privateKeyPath = path.join(__dirname, '../../keys/private.pem');
 const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
@@ -68,10 +68,10 @@ class User extends Model implements UserAttr {
     });
 
     if (!user) {
-      throw new Error('No such user found 1');
+      throw new Error('No such user found');
     }
 
-    const encPass = SHA512(`${process.env.salt1}${password}${process.env.salt2}`).toString();
+    const encPass = generatePassword(password);
 
     if (encPass !== user.password) {
       throw new Error('No such user found');
@@ -142,7 +142,7 @@ User.init({
   hooks: {
     afterValidate: (user) => {
       // eslint-disable-next-line no-param-reassign
-      user.password = SHA512(`${process.env.salt1}${user.password}${process.env.salt2}`).toString();
+      user.password = generatePassword(user.password);
     },
   },
 });

@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { ValidationError, UniqueConstraintError, ForeignKeyConstraintError } from 'sequelize';
+import { SHA512 } from 'crypto-js';
 
 const SendOnError = (e: Error, res: Response): Response<any> => {
   if (e instanceof ValidationError) {
@@ -17,5 +18,13 @@ const SendOnError = (e: Error, res: Response): Response<any> => {
   return res.status(500).send();
 };
 
-// eslint-disable-next-line import/prefer-default-export
-export { SendOnError };
+const generatePassword = (password: string, iter: number = 20): string => {
+  let pass = password;
+  for (let i = 0; i <= iter; i += 1) {
+    pass = SHA512(`${process.env.salt1}${pass}${process.env.salt2}`).toString();
+  }
+
+  return pass;
+};
+
+export { SendOnError, generatePassword };

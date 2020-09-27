@@ -2,6 +2,8 @@ import express, { Request, Response } from 'express';
 
 import { User } from '../models/User';
 
+import { auth } from '../middlewares/auth';
+
 import { SendOnError } from '../utils/functions';
 
 const router = express.Router();
@@ -26,7 +28,7 @@ interface LoginReq extends Request {
   }
 }
 
-router.post('/users/create', async (req: SignUpReq, res: Response) => {
+router.post('/create', async (req: SignUpReq, res: Response) => {
   const queries = Object.keys(req.body.user);
   const allowedQueries = ['name', 'username', 'email', 'password'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
@@ -44,7 +46,7 @@ router.post('/users/create', async (req: SignUpReq, res: Response) => {
   }
 });
 
-router.post('/users/login', async (req: LoginReq, res: Response) => {
+router.post('/login', async (req: LoginReq, res: Response) => {
   try {
     const user = await User.checkUsernameAndPass(req.body.user.username, req.body.user.password);
     const token = await user.generateJwt();
@@ -52,6 +54,14 @@ router.post('/users/login', async (req: LoginReq, res: Response) => {
     res.send({ user, token });
   } catch (e) {
     res.status(404).send();
+  }
+});
+
+router.get('/token', auth, async (req, res) => {
+  try {
+    res.send(req.user!);
+  } catch (e) {
+    SendOnError(e, res);
   }
 });
 

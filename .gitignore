@@ -26,7 +26,6 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 apidoc/
 
 ecosystem.config.js
-project-1b9c6-firebase-adminsdk-deiwj-5378d5bd37.json
 # Runtime data
 pids
 *.pid

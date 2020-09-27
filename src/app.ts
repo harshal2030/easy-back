@@ -11,8 +11,8 @@ const server = http.createServer(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(userRouter);
-app.use(classRouter);
+app.use('/users', userRouter);
+app.use('/class', classRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello');

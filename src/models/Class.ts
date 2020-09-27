@@ -9,6 +9,7 @@ interface ClassAttr {
   name: string;
   about: string;
   owner: string;
+  photo: string;
   collaborators: string[];
 }
 
@@ -20,6 +21,8 @@ class Class extends Model implements ClassAttr {
   public about!: string;
 
   public owner!: string;
+
+  public photo!: string;
 
   public collaborators!: string[];
 
@@ -50,6 +53,10 @@ Class.init({
       model: User,
       key: 'username',
     },
+  },
+  photo: {
+    type: DataTypes.STRING,
+    defaultValue: null,
   },
   collaborators: {
     type: DataTypes.ARRAY(DataTypes.STRING(255)),
