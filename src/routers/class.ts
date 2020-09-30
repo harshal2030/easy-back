@@ -56,9 +56,10 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
 
 router.get('/', auth, async (req, res) => {
   try {
-    const classes = await sequelize.query(`SELECT "Classes"."id", "Classes"."owner", "Classes"."name", "Classes"."about", 
-      "Classes"."photo", "Classes"."collaborators" FROM "Classes" LEFT JOIN "Students" ON "Students"."classId" = "Classes"."id"
-      WHERE "Classes"."owner" = :username OR "Students"."username" = :username`, {
+    const classes = await sequelize.query(`SELECT "Classes"."id", "Classes"."owner", "Classes"."name", "Classes"."about", "Users"."avatar",
+    "Classes"."photo", "Classes"."collaborators" FROM "Classes" LEFT JOIN "Students" 
+    ON "Students"."classId" = "Classes"."id" INNER JOIN "Users" ON "Users"."username" = "Classes"."owner"
+    WHERE "Classes"."owner" = :username OR "Students"."username" = :username`, {
       replacements: { username: req.user!.username },
     });
 

@@ -121,6 +121,11 @@ User.init({
       },
     },
   },
+  avatar: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    defaultValue: 'default.png',
+  },
   password: {
     type: DataTypes.STRING,
     allowNull: false,
