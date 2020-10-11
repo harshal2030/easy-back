@@ -5,7 +5,7 @@ import fs from 'fs';
 
 import sequelize from '../db/index';
 import { usernamePattern } from '../utils/regexPatterns';
-import { generatePassword } from '../utils/functions';
+import { generateHash } from '../utils/functions';
 
 const privateKeyPath = path.join(__dirname, '../../keys/private.pem');
 const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
@@ -71,7 +71,7 @@ class User extends Model implements UserAttr {
       throw new Error('No such user found');
     }
 
-    const encPass = generatePassword(password);
+    const encPass = generateHash(password);
 
     if (encPass !== user.password) {
       throw new Error('No such user found');
@@ -147,7 +147,7 @@ User.init({
   hooks: {
     afterValidate: (user) => {
       // eslint-disable-next-line no-param-reassign
-      user.password = generatePassword(user.password);
+      user.password = generateHash(user.password);
     },
   },
 });

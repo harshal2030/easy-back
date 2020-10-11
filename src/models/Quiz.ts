@@ -1,3 +1,4 @@
+import { nanoid } from 'nanoid';
 /* eslint-disable no-param-reassign */
 import { Model, DataTypes } from 'sequelize';
 import sequelize from '../db';
@@ -5,7 +6,7 @@ import sequelize from '../db';
 interface QuizAttr {
   classId: string;
   questions: number;
-  slug: string;
+  quizId: string;
   title: string;
   description: string;
   releaseTime: Date;
@@ -20,7 +21,7 @@ class Quiz extends Model implements QuizAttr {
 
   public questions!: number;
 
-  public slug!: string;
+  public quizId!: string;
 
   public title!: string;
 
@@ -50,9 +51,11 @@ Quiz.init({
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  slug: {
+  quizId: {
     type: DataTypes.STRING,
     allowNull: false,
+    unique: true,
+    defaultValue: () => nanoid(),
   },
   title: {
     type: DataTypes.STRING(50),

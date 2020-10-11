@@ -18,13 +18,13 @@ const SendOnError = (e: Error, res: Response): Response<any> => {
   return res.status(500).send();
 };
 
-const generatePassword = (password: string, iter: number = 20): string => {
-  let pass = password;
+const generateHash = (text: string, iter: number = 20): string => {
+  let hash = text;
   for (let i = 0; i <= iter; i += 1) {
-    pass = SHA512(`${process.env.salt1}${pass}${process.env.salt2}`).toString();
+    hash = SHA512(`${process.env.salt1}${hash}${process.env.salt2}`).toString();
   }
 
-  return pass;
+  return hash;
 };
 
-export { SendOnError, generatePassword };
+export { SendOnError, generateHash };

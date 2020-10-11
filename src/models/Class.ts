@@ -44,7 +44,7 @@ Class.init({
     allowNull: false,
   },
   about: {
-    type: DataTypes.STRING(1000),
+    type: DataTypes.TEXT,
   },
   owner: {
     type: DataTypes.STRING,
