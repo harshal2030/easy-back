@@ -36,6 +36,7 @@ class Question extends Model implements QuestionAttr {
       queId: this.queId,
       question: this.question,
       options: this.options,
+      attachments: this.attachments,
     };
   }
 }

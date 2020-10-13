@@ -23,19 +23,20 @@ const mustBeClassOwner = async (req: Request, res: Response, next: NextFunction)
 
 const mustBeStudentOrOwner = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const owner = await Class.findOne({
-      where: {
-        id: req.params.classId,
-        owner: req.user!.username,
-      },
-    });
-
-    const student = await Student.findOne({
-      where: {
-        classId: req.params.classId,
-        username: req.user!.username,
-      },
-    });
+    const [owner, student] = await Promise.all([
+      Class.findOne({
+        where: {
+          id: req.params.classId,
+          owner: req.user!.username,
+        },
+      }),
+      Student.findOne({
+        where: {
+          classId: req.params.classId,
+          username: req.user!.username,
+        },
+      }),
+    ]);
 
     if (!(owner || student)) {
       throw new Error();

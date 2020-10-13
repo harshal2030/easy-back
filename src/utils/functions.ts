@@ -27,4 +27,20 @@ const generateHash = (text: string, iter: number = 20): string => {
   return hash;
 };
 
-export { SendOnError, generateHash };
+const shuffleArray = <T>(arr: T[]): T[] => {
+  const shuffleArr = arr;
+  let currentIndex = arr.length;
+
+  while (currentIndex !== 0) {
+    const randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex -= 1;
+
+    const tempValue = shuffleArr[currentIndex];
+    shuffleArr[currentIndex] = shuffleArr[randomIndex];
+    shuffleArr[randomIndex] = tempValue;
+  }
+
+  return shuffleArr;
+};
+
+export { SendOnError, generateHash, shuffleArray };
