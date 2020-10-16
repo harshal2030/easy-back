@@ -9,8 +9,10 @@ interface QuizAttr {
   quizId: string;
   title: string;
   description: string;
-  releaseTime: Date;
-  closeTime: Date;
+  timePeriod: [
+    {value: Date; inclusive: Boolean},
+    {value: Date; inclusive: Boolean},
+  ];
   releaseScore: boolean;
   randomQue: boolean;
   randomOp: boolean;
@@ -27,9 +29,7 @@ class Quiz extends Model implements QuizAttr {
 
   public description!: string;
 
-  public releaseTime!: Date;
-
-  public closeTime!: Date;
+  public timePeriod!: [{value: Date; inclusive: boolean }, {value: Date; inclusive: boolean}];
 
   public releaseScore!: boolean;
 
@@ -70,13 +70,8 @@ Quiz.init({
   description: {
     type: DataTypes.TEXT,
   },
-  releaseTime: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW,
-  },
-  closeTime: {
-    type: DataTypes.DATE,
+  timePeriod: {
+    type: DataTypes.RANGE(DataTypes.DATE),
   },
   releaseScore: {
     type: DataTypes.BOOLEAN,

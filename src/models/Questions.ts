@@ -12,6 +12,7 @@ interface QuestionAttr {
   attachments: string;
   options: string[];
   correct: string;
+  score: number;
 }
 
 class Question extends Model implements QuestionAttr {
@@ -26,6 +27,8 @@ class Question extends Model implements QuestionAttr {
   public options!: string[];
 
   public correct!: string;
+
+  public score!: number;
 
   public readonly createdAt!: Date;
 
@@ -76,12 +79,17 @@ Question.init({
     type: DataTypes.TEXT,
     allowNull: false,
   },
+  score: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 1,
+  },
 }, {
   validate: {
     // eslint-disable-next-line no-unused-vars
     checkCorrectOp(this: QuestionAttr) {
       if (!this.options.includes(this.correct)) {
-        throw new Error("options doesn't contain correct option");
+        throw new Error("Options doesn't contain correct option");
       }
     },
   },

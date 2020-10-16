@@ -25,7 +25,6 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
   }
 });
 
-// TODO: send response according to attributes in a quiz
 router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
     const quiz = await Quiz.findOne({
@@ -41,12 +40,8 @@ router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => 
 
     const now = new Date().getTime();
 
-    if (now < quiz.releaseTime.getTime()) {
-      return res.status(400).send({ error: "It's not accepting response anymore" });
-    }
-
-    if (quiz.closeTime && now > quiz.closeTime.getTime()) {
-      return res.status(400).send({ error: "It's not accepting response anymore" });
+    if (quiz.timePeriod[0].value.getTime() > now || quiz.timePeriod[1].value.getTime() < now) {
+      return res.status(400).send({ error: 'No longer accepting response' });
     }
 
     let questions;
@@ -70,11 +65,14 @@ router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => 
       });
     }
 
+    const totalScore = questions.length === 0
+      ? 0 : questions.map((que) => que.score).reduce((a, b) => a + b);
+
     if (quiz.randomOp) {
       questions.forEach((que) => shuffleArray<string>(que.options));
     }
 
-    return res.send(questions);
+    return res.send({ questions, totalScore, quizId: quiz.quizId });
   } catch (e) {
     return SendOnError(e, res);
   }
