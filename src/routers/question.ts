@@ -30,7 +30,6 @@ const mediaMiddleware = upload.fields([
   { name: 'media', maxCount: 1 },
 ]);
 
-// TODO: add attachment to question
 router.post('/:classId/:quizId', auth, mustBeClassOwner, mediaMiddleware, async (req, res) => {
   const info = JSON.parse(req.body.info);
 

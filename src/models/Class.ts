@@ -8,6 +8,7 @@ interface ClassAttr {
   id: string;
   name: string;
   about: string;
+  subject: string;
   owner: string;
   photo: string;
   collaborators: string[];
@@ -19,6 +20,8 @@ class Class extends Model implements ClassAttr {
   public name!: string;
 
   public about!: string;
+
+  public subject!: string;
 
   public owner!: string;
 
@@ -45,6 +48,9 @@ Class.init({
   },
   about: {
     type: DataTypes.TEXT,
+  },
+  subject: {
+    type: DataTypes.STRING,
   },
   owner: {
     type: DataTypes.STRING,

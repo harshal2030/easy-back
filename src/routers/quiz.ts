@@ -1,10 +1,12 @@
 import express from 'express';
 import sequelize from '../db';
 
-import { auth } from '../middlewares/auth';
-import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { Question } from '../models/Questions';
 import { Quiz } from '../models/Quiz';
+import { Result } from '../models/Result';
+
+import { auth } from '../middlewares/auth';
+import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { SendOnError, shuffleArray } from '../utils/functions';
 
 const router = express.Router();
@@ -73,6 +75,31 @@ router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => 
     }
 
     return res.send({ questions, totalScore, quizId: quiz.quizId });
+  } catch (e) {
+    return SendOnError(e, res);
+  }
+});
+
+router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    const quiz = await Quiz.findOne({
+      where: {
+        classId: req.params.classId,
+        quizId: req.params.quizId,
+      },
+    });
+
+    if (!quiz) {
+      return res.status(404).send({ error: 'No such quiz found' });
+    }
+
+    const response = await Result.create({
+      quizId: req.params.quizId,
+      responder: req.user!.username,
+      response: req.body.response,
+    });
+
+    return res.send(response.response);
   } catch (e) {
     return SendOnError(e, res);
   }
