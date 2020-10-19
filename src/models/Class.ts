@@ -12,6 +12,8 @@ interface ClassAttr {
   owner: string;
   photo: string;
   collaborators: string[];
+  joinCode: string;
+  lockJoin: boolean;
 }
 
 class Class extends Model implements ClassAttr {
@@ -28,6 +30,10 @@ class Class extends Model implements ClassAttr {
   public photo!: string;
 
   public collaborators!: string[];
+
+  public joinCode!: string;
+
+  public lockJoin!: boolean;
 
   public readonly createdAt!: Date;
 
@@ -67,6 +73,14 @@ Class.init({
   collaborators: {
     type: DataTypes.ARRAY(DataTypes.STRING(255)),
     defaultValue: [],
+  },
+  joinCode: {
+    type: DataTypes.STRING,
+    defaultValue: () => nanoid(12),
+  },
+  lockJoin: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
   },
 }, {
   sequelize,

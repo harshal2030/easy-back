@@ -65,4 +65,22 @@ router.get('/token', auth, async (req, res) => {
   }
 });
 
+router.post('/logout', auth, async (req, res) => {
+  try {
+    req.user!.tokens.filter((value) => value !== req.token!);
+
+    await User.update({
+      tokens: req.user!.tokens,
+    }, {
+      where: {
+        username: req.user!.username,
+      },
+    });
+
+    res.send();
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
 export default router;

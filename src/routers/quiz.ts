@@ -99,7 +99,15 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
       response: req.body.response,
     });
 
-    return res.send(response.response);
+    if (quiz.releaseScore) {
+      const summary = Result.getCorrectResponses(response.response);
+      return res.send({
+        totalQues: quiz.questions,
+        ...summary,
+      });
+    }
+
+    return res.send();
   } catch (e) {
     return SendOnError(e, res);
   }

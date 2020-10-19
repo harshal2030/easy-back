@@ -10,6 +10,7 @@ import { Class } from '../models/Class';
 import sequelize from '../db';
 
 import { auth } from '../middlewares/auth';
+import { Student } from '../models/Student';
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ const mediaMiddleware = upload.fields([
 router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
   const data = JSON.parse(req.body.info);
   const queries = Object.keys(data);
-  const allowedQueries = ['name', 'about'];
+  const allowedQueries = ['name', 'about', 'subject'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
@@ -81,6 +82,30 @@ router.get('/:id', auth, async (req, res) => {
     res.send(section);
   } catch (e) {
     SendOnError(e, res);
+  }
+});
+
+router.post('/join', auth, async (req, res) => {
+  try {
+    const classToJoin = await Class.findOne({
+      where: {
+        joinCode: req.body.joinCode,
+        lockJoin: false,
+      },
+    });
+
+    if (!classToJoin) {
+      return res.status(404).send({ error: 'No such class found' });
+    }
+
+    await Student.create({
+      classId: classToJoin.id,
+      username: req.user!.username,
+    });
+
+    return res.send();
+  } catch (e) {
+    return SendOnError(e, res);
   }
 });
 
