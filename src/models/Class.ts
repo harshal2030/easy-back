@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 
 import sequelize from '../db';
 import { User } from './User';
+import { Student } from './Student';
 
 interface ClassAttr {
   id: string;
@@ -51,12 +52,26 @@ Class.init({
   name: {
     type: DataTypes.STRING,
     allowNull: false,
+    validate: {
+      checkEmptyString(value: string) {
+        if (value.trim().length < 1) {
+          throw new Error('Name is required for the class');
+        }
+      },
+    },
   },
   about: {
     type: DataTypes.TEXT,
   },
   subject: {
     type: DataTypes.STRING,
+    validate: {
+      checkEmptySub(value: string) {
+        if (value.trim().length < 1) {
+          throw new Error('Please enter the subject for your class');
+        }
+      },
+    },
   },
   owner: {
     type: DataTypes.STRING,
@@ -85,6 +100,18 @@ Class.init({
 }, {
   sequelize,
   timestamps: true,
+});
+
+Class.hasMany(Student, {
+  sourceKey: 'id',
+  foreignKey: 'classId',
+  as: 'studentRef',
+});
+
+Class.belongsTo(User, {
+  as: 'ownerRef',
+  foreignKey: 'owner',
+  targetKey: 'username',
 });
 
 export { Class, ClassAttr };

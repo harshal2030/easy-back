@@ -14,6 +14,7 @@ interface UserAttr {
   id: number;
   name: string;
   username: string;
+  avatar: string;
   email: string;
   password: string;
   tokens: string[];
@@ -27,6 +28,8 @@ class User extends Model implements UserAttr {
   public username!: string;
 
   public email!: string;
+
+  public avatar!: string;
 
   public password!: string;
 
