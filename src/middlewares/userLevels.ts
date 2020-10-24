@@ -7,7 +7,7 @@ const mustBeClassOwner = async (req: Request, res: Response, next: NextFunction)
     const owner = await Class.findOne({
       where: {
         id: req.params.classId,
-        owner: req.user!.username,
+        ownerRef: req.user!.username,
       },
     });
 
@@ -27,7 +27,7 @@ const mustBeStudentOrOwner = async (req: Request, res: Response, next: NextFunct
       Class.findOne({
         where: {
           id: req.params.classId,
-          owner: req.user!.username,
+          ownerRef: req.user!.username,
         },
       }),
       Student.findOne({

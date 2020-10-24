@@ -10,7 +10,7 @@ interface ClassAttr {
   name: string;
   about: string;
   subject: string;
-  owner: string;
+  ownerRef: string;
   photo: string;
   collaborators: string[];
   joinCode: string;
@@ -26,7 +26,7 @@ class Class extends Model implements ClassAttr {
 
   public subject!: string;
 
-  public owner!: string;
+  public ownerRef!: string;
 
   public photo!: string;
 
@@ -39,6 +39,10 @@ class Class extends Model implements ClassAttr {
   public readonly createdAt!: Date;
 
   public readonly updatedAt!: Date;
+
+  public readonly students!: Student[];
+
+  public readonly owner!: User;
 }
 
 Class.init({
@@ -73,7 +77,7 @@ Class.init({
       },
     },
   },
-  owner: {
+  ownerRef: {
     type: DataTypes.STRING,
     allowNull: false,
     references: {
@@ -105,12 +109,12 @@ Class.init({
 Class.hasMany(Student, {
   sourceKey: 'id',
   foreignKey: 'classId',
-  as: 'studentRef',
+  as: 'students',
 });
 
 Class.belongsTo(User, {
-  as: 'ownerRef',
-  foreignKey: 'owner',
+  as: 'owner',
+  foreignKey: 'ownerRef',
   targetKey: 'username',
 });
 

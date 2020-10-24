@@ -2,6 +2,7 @@ import express, { Request, Response, Express } from 'express';
 import multer from 'multer';
 import sharp from 'sharp';
 import { nanoid } from 'nanoid';
+import { Op } from 'sequelize';
 
 import { SendOnError } from '../utils/functions';
 import { classImagePath } from '../utils/paths';
@@ -9,7 +10,6 @@ import { classImagePath } from '../utils/paths';
 import { Class } from '../models/Class';
 import { User } from '../models/User';
 import { Student } from '../models/Student';
-import sequelize from '../db';
 
 import { auth } from '../middlewares/auth';
 
@@ -51,22 +51,22 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       await sharp(buffer).png({ compressionLevel: 6 }).toFile(`${classImagePath}/${fileName}`);
     }
 
-    const section = await Class.create({ ...data, owner: req.user!.username, photo: fileName });
+    const section = await Class.create({ ...data, ownerRef: req.user!.username, photo: fileName });
     const {
-      id, owner, name, about, photo, collaborators, subject, joinCode,
+      id, name, about, photo, collaborators, subject, joinCode,
     } = section;
     return res.status(201).send({
       id,
-      owner,
       name,
       about,
       photo,
       collaborators,
       subject,
       joinCode,
-      ownerRef: {
+      owner: {
         username: req.user!.username,
         avatar: req.user!.avatar,
+        name: req.user!.name,
       },
     });
   } catch (e) {
@@ -76,36 +76,31 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
 
 router.get('/', auth, async (req, res) => {
   try {
-    const classes = await sequelize.query(`SELECT "Classes"."id", "Classes"."owner", "Classes"."name", "Classes"."about",
-    "ownerRef"."avatar" AS "ownerRef.avatar", "ownerRef"."username" AS "ownerRef.username",
-    "Classes"."photo", "Classes"."collaborators", "Classes"."subject", "Classes"."joinCode" FROM "Classes" LEFT JOIN "Students" 
-    ON "Students"."classId" = "Classes"."id" INNER JOIN "Users" AS "ownerRef" ON "ownerRef"."username" = "Classes"."owner"
-    WHERE "Classes"."owner" = :username OR "Students"."username" = :username ORDER BY "Classes"."createdAt" DESC`, {
-      replacements: { username: req.user!.username },
+    const classes = await Class.findAll({
+      where: {
+        [Op.or]: {
+          ownerRef: req.user!.username,
+          '$students.username$': req.user!.username,
+        },
+      },
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode'],
+      include: [
+        {
+          model: User,
+          as: 'owner',
+          required: true,
+          attributes: ['avatar', 'username', 'name'],
+        },
+        {
+          model: Student,
+          as: 'students',
+          attributes: [],
+          required: false,
+        },
+      ],
     });
 
-    res.send(classes[0].map((cls) => {
-      const {
-        // @ts-ignore
-        id, owner, name, about, photo, collaborators, subject, joinCode,
-      } = cls;
-      return {
-        id,
-        owner,
-        name,
-        about,
-        photo,
-        collaborators,
-        subject,
-        joinCode,
-        ownerRef: {
-          // @ts-ignore
-          username: cls['ownerRef.username'],
-          // @ts-ignore
-          avatar: cls['ownerRef.avatar'],
-        },
-      };
-    }));
+    res.send(classes);
   } catch (e) {
     SendOnError(e, res);
   }
@@ -117,12 +112,12 @@ router.get('/:id', auth, async (req, res) => {
       where: {
         id: req.params.id,
       },
-      attributes: ['id', 'owner', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode'],
       include: [{
         model: User,
-        as: 'ownerRef',
+        as: 'owner',
         required: true,
-        attributes: ['username', 'avatar'],
+        attributes: ['username', 'avatar', 'name'],
       }],
     });
 
@@ -139,12 +134,12 @@ router.post('/join', auth, async (req, res) => {
         joinCode: req.body.joinCode,
         lockJoin: false,
       },
-      attributes: ['id', 'owner', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode'],
       include: [{
         model: User,
-        as: 'ownerRef',
+        as: 'owner',
         required: true,
-        attributes: ['username', 'avatar'],
+        attributes: ['username', 'avatar', 'name'],
       }],
     });
 

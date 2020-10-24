@@ -87,6 +87,7 @@ class User extends Model implements UserAttr {
     return {
       name: this.name,
       username: this.username,
+      avatar: this.avatar,
     };
   }
 }
