@@ -13,6 +13,7 @@ const user1: UserAttr = {
   name: 'Harshal',
   username: 'harshal223',
   email: 'harshal@example.com',
+  avatar: 'default.png',
   password: 'sdjfhsdkfjhsdk',
   tokens: [jwt.sign({ username: 'harshal22' }, privateKey, { algorithm: 'RS256' })],
 };
@@ -21,6 +22,7 @@ const user2: UserAttr = {
   id: 2,
   name: 'john',
   username: 'john',
+  avatar: 'default.png',
   email: 'john@doe.com',
   password: 'jshlsdkjfghlsdfjghlsdfkgj',
   tokens: [jwt.sign({ username: 'john' }, privateKey, { algorithm: 'RS256' })],

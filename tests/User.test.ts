@@ -32,6 +32,7 @@ describe('Account related tests', () => {
       user: {
         name: registeredUser.name,
         username: registeredUser.username,
+        avatar: registeredUser.avatar,
       },
       token: expect.any(String),
     });
