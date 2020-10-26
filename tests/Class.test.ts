@@ -9,7 +9,7 @@ beforeAll(SeedDB);
 describe('Class creation, update, getter tests', () => {
   test('Should create the class', async () => {
     const res = await req(app)
-      .post('/class/create')
+      .post('/class')
       .send({
         name: 'class',
         about: 'this is class',
@@ -23,7 +23,7 @@ describe('Class creation, update, getter tests', () => {
       },
     });
 
-    expect(res.body).toMatchObject(Sec);
+    expect(res.body!).toMatchObject(Sec);
   });
 });
 
