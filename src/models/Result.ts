@@ -1,6 +1,5 @@
 import { Model, DataTypes, Op } from 'sequelize';
 import sequelize from '../db';
-import { generateHash } from '../utils/functions';
 import { Question } from './Questions';
 
 interface ResultAttr {
@@ -24,7 +23,7 @@ class Result extends Model implements ResultAttr {
       attributes: ['score', 'queId', 'correct'],
     });
 
-    const userResponses = queInfo.map((que) => generateHash(que.response));
+    const userResponses = queInfo.map((que) => que.response);
     const correctResponses = ques.filter((que) => userResponses.includes(que.correct));
 
     const totalScore = ques.length === 0 ? 0 : ques.map((que) => que.score).reduce((a, b) => a + b);

@@ -15,13 +15,20 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
   if (req.body.quizId) {
     return res.status(400).send({ Error: 'Invalid params' });
   }
+
+  const range = req.body.timePeriod ? [
+    { value: req.body.timePeriod[0], inclusive: true },
+    { value: req.body.timePeriod[1], inclusive: true },
+  ] : null;
+
   try {
     const quiz = await Quiz.create({
       ...req.body,
+      timePeriod: range,
       classId: req.params.classId,
     });
 
-    return res.send(quiz);
+    return res.status(201).send(quiz);
   } catch (e) {
     return SendOnError(e, res);
   }
@@ -53,7 +60,7 @@ router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => 
         where: {
           quizId: req.params.quizId,
         },
-        attributes: ['question', 'options', 'queId', 'attachments'],
+        attributes: ['question', 'options', 'queId', 'attachments', 'score'],
         order: sequelize.random(),
         limit: quiz.questions,
       });
@@ -62,7 +69,7 @@ router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => 
         where: {
           quizId: req.params.quizId,
         },
-        attributes: ['question', 'options', 'queId', 'attachments'],
+        attributes: ['question', 'options', 'queId', 'attachments', 'score'],
         limit: quiz.questions,
       });
     }

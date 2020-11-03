@@ -21,7 +21,7 @@
     "pg-hstore": "^2.3.3",
     "sequelize": "^6.3.5",
     "sharp": "^0.26.1",
-    "slugify": "^1.4.5"
+    "xlsx": "^0.16.8"
   },
   "devDependencies": {
     "@types/crypto-js": "^3.1.47",
