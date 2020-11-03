@@ -3,16 +3,21 @@ import { nanoid } from 'nanoid';
 
 import sequelize from '../db';
 import { Quiz } from './Quiz';
-import { generateHash } from '../utils/functions';
 
 interface QuestionAttr {
   quizId: string;
-  queId: string;
+  queId?: string;
   question: string;
-  attachments: string;
+  attachments?: string;
   options: string[];
   correct: string;
   score: number;
+}
+interface queSheet {
+  question: string;
+  correct: any;
+  score: number;
+  [ options: string ]: any;
 }
 
 class Question extends Model implements QuestionAttr {
@@ -33,6 +38,28 @@ class Question extends Model implements QuestionAttr {
   public readonly createdAt!: Date;
 
   public readonly updatedAt!: Date;
+
+  static formatQueSheet(questions: queSheet[], quizId: string) {
+    return questions.map((question) => {
+      const data = { ...question };
+      const final: QuestionAttr = {
+        quizId,
+        question: data.question,
+        score: data.score,
+        correct: data.correct,
+        options: [],
+      };
+
+      delete data.correct;
+      // @ts-ignore
+      delete data.score;
+      // @ts-ignore
+      delete data.question;
+
+      final.options = Object.values(data);
+      return final;
+    });
+  }
 
   toJSON() {
     return {
@@ -95,12 +122,6 @@ Question.init({
   },
   sequelize,
   timestamps: true,
-  hooks: {
-    afterValidate: (que) => {
-      // eslint-disable-next-line no-param-reassign
-      que.correct = generateHash(que.correct);
-    },
-  },
 });
 
-export { Question, QuestionAttr };
+export { Question, QuestionAttr, queSheet };

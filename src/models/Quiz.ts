@@ -10,8 +10,8 @@ interface QuizAttr {
   title: string;
   description: string;
   timePeriod: [
-    {value: Date; inclusive: Boolean},
-    {value: Date; inclusive: Boolean},
+    {value: Date; inclusive: boolean},
+    {value: Date; inclusive: boolean},
   ];
   releaseScore: boolean;
   randomQue: boolean;
