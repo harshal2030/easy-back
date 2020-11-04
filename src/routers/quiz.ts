@@ -1,4 +1,5 @@
 import express from 'express';
+import { Op } from 'sequelize';
 import sequelize from '../db';
 
 import { Question } from '../models/Questions';
@@ -11,17 +12,69 @@ import { SendOnError, shuffleArray } from '../utils/functions';
 
 const router = express.Router();
 
+router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    const requested = req.query.return as unknown as string | undefined;
+    const fields = requested ? requested.split(',') : ['live', 'expired'];
+
+    const response: {
+      [fields: string]: Quiz[]
+    } = { live: [], expired: [], scored: [] };
+
+    if (fields.includes('live')) {
+      response.live = await Quiz.findAll({
+        where: {
+          timePeriod: {
+            [Op.contains]: new Date(),
+          },
+        },
+      });
+    }
+
+    if (fields.includes('expired')) {
+      response.expired = await Quiz.findAll({
+        where: {
+          [Op.not]: {
+            timePeriod: {
+              [Op.contains]: new Date(),
+            },
+          },
+        },
+      });
+    }
+
+    if (fields.includes('scored')) {
+      response.scored = await Quiz.findAll({
+        where: {
+          releaseScore: false,
+        },
+      });
+    }
+
+    res.send(response);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
 router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
   if (req.body.quizId) {
     return res.status(400).send({ Error: 'Invalid params' });
   }
+
+  const range = req.body.timePeriod ? [
+    { value: req.body.timePeriod[0], inclusive: true },
+    { value: req.body.timePeriod[1], inclusive: true },
+  ] : null;
+
   try {
     const quiz = await Quiz.create({
       ...req.body,
+      timePeriod: range,
       classId: req.params.classId,
     });
 
-    return res.send(quiz);
+    return res.status(201).send(quiz);
   } catch (e) {
     return SendOnError(e, res);
   }
@@ -53,7 +106,7 @@ router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => 
         where: {
           quizId: req.params.quizId,
         },
-        attributes: ['question', 'options', 'queId', 'attachments'],
+        attributes: ['question', 'options', 'queId', 'attachments', 'score'],
         order: sequelize.random(),
         limit: quiz.questions,
       });
@@ -62,7 +115,7 @@ router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => 
         where: {
           quizId: req.params.quizId,
         },
-        attributes: ['question', 'options', 'queId', 'attachments'],
+        attributes: ['question', 'options', 'queId', 'attachments', 'score'],
         limit: quiz.questions,
       });
     }

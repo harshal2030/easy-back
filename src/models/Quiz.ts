@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 /* eslint-disable no-param-reassign */
 import { Model, DataTypes } from 'sequelize';
 import sequelize from '../db';
+import { Class } from './Class';
 
 interface QuizAttr {
   classId: string;
@@ -10,8 +11,8 @@ interface QuizAttr {
   title: string;
   description: string;
   timePeriod: [
-    {value: Date; inclusive: Boolean},
-    {value: Date; inclusive: Boolean},
+    {value: Date; inclusive: boolean},
+    {value: Date; inclusive: boolean},
   ];
   releaseScore: boolean;
   randomQue: boolean;
@@ -88,6 +89,12 @@ Quiz.init({
 }, {
   sequelize,
   timestamps: true,
+});
+
+Quiz.belongsTo(Class, {
+  as: 'class',
+  foreignKey: 'classId',
+  targetKey: 'id',
 });
 
 export { Quiz, QuizAttr };
