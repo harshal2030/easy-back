@@ -1,4 +1,5 @@
 import express from 'express';
+import { Op } from 'sequelize';
 import sequelize from '../db';
 
 import { Question } from '../models/Questions';
@@ -10,6 +11,51 @@ import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevel
 import { SendOnError, shuffleArray } from '../utils/functions';
 
 const router = express.Router();
+
+router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    const requested = req.query.return as unknown as string | undefined;
+    const fields = requested ? requested.split(',') : ['live', 'expired'];
+
+    const response: {
+      [fields: string]: Quiz[]
+    } = { live: [], expired: [], scored: [] };
+
+    if (fields.includes('live')) {
+      response.live = await Quiz.findAll({
+        where: {
+          timePeriod: {
+            [Op.contains]: new Date(),
+          },
+        },
+      });
+    }
+
+    if (fields.includes('expired')) {
+      response.expired = await Quiz.findAll({
+        where: {
+          [Op.not]: {
+            timePeriod: {
+              [Op.contains]: new Date(),
+            },
+          },
+        },
+      });
+    }
+
+    if (fields.includes('scored')) {
+      response.scored = await Quiz.findAll({
+        where: {
+          releaseScore: false,
+        },
+      });
+    }
+
+    res.send(response);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
 
 router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
   if (req.body.quizId) {
