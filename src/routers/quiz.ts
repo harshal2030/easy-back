@@ -27,7 +27,9 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
           timePeriod: {
             [Op.contains]: new Date(),
           },
+          classId: req.params.classId,
         },
+        order: [['createdAt', 'DESC']],
       });
     }
 
@@ -39,15 +41,19 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
               [Op.contains]: new Date(),
             },
           },
+          classId: req.params.classId,
         },
+        order: [['createdAt', 'DESC']],
       });
     }
 
     if (fields.includes('scored')) {
       response.scored = await Quiz.findAll({
         where: {
-          releaseScore: false,
+          releaseScore: true,
+          classId: req.params.classId,
         },
+        order: [['createdAt', 'DESC']],
       });
     }
 
