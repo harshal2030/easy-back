@@ -1,5 +1,6 @@
 import express, { Application } from 'express';
 import http from 'http';
+import compression from 'compression';
 
 // routers
 import userRouter from './routers/user';
@@ -12,6 +13,7 @@ import studentRouter from './routers/students';
 const app: Application = express();
 const server = http.createServer(app);
 
+app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
