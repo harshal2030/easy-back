@@ -12,6 +12,7 @@ import { User } from '../models/User';
 import { Student } from '../models/Student';
 
 import { auth } from '../middlewares/auth';
+import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ const mediaMiddleware = upload.fields([
 router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
   const data = JSON.parse(req.body.info);
   const queries = Object.keys(data);
-  const allowedQueries = ['name', 'about', 'subject'];
+  const allowedQueries = ['name', 'about', 'subject', 'lockJoin'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
@@ -53,7 +54,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
 
     const section = await Class.create({ ...data, ownerRef: req.user!.username, photo: fileName });
     const {
-      id, name, about, photo, collaborators, subject, joinCode,
+      id, name, about, photo, collaborators, subject, joinCode, lockJoin,
     } = section;
     return res.status(201).send({
       id,
@@ -63,6 +64,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       collaborators,
       subject,
       joinCode,
+      lockJoin,
       owner: {
         username: req.user!.username,
         avatar: req.user!.avatar,
@@ -83,7 +85,7 @@ router.get('/', auth, async (req, res) => {
           '$students.username$': req.user!.username,
         },
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin'],
       include: [
         {
           model: User,
@@ -106,13 +108,13 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-router.get('/:id', auth, async (req, res) => {
+router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
     const class2 = await Class.findOne({
       where: {
-        id: req.params.id,
+        id: req.params.classId,
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin'],
       include: [{
         model: User,
         as: 'owner',
@@ -153,6 +155,57 @@ router.post('/join', auth, async (req, res) => {
     });
 
     return res.send(classToJoin);
+  } catch (e) {
+    return SendOnError(e, res);
+  }
+});
+
+router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res) => {
+  const data = JSON.parse(req.body.info);
+  const queries = Object.keys(data);
+  const allowedQueries = ['name', 'about', 'subject', 'lockJoin'];
+  const isValid = queries.every((query) => allowedQueries.includes(query));
+
+  if (!isValid) {
+    return res.status(400).send({ error: 'Invalid params.' });
+  }
+  try {
+    const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
+    let fileName = '';
+    if (files.classPhoto !== undefined) {
+      const { buffer } = files.classPhoto[0];
+
+      fileName = `${nanoid()}.png`;
+      await sharp(buffer).png({ compressionLevel: 6 }).toFile(`${classImagePath}/${fileName}`);
+      data.photo = fileName;
+    }
+
+    const classToUpdate = await Class.update({ ...data }, {
+      where: {
+        id: req.params.classId,
+      },
+      returning: true,
+    });
+
+    const {
+      id, name, about, photo, collaborators, subject, joinCode, lockJoin,
+    } = classToUpdate[1][0];
+
+    return res.send({
+      id,
+      name,
+      about,
+      photo,
+      collaborators,
+      subject,
+      joinCode,
+      lockJoin,
+      owner: {
+        username: req.user!.username,
+        avatar: req.user!.avatar,
+        name: req.user!.name,
+      },
+    });
   } catch (e) {
     return SendOnError(e, res);
   }
