@@ -4,7 +4,7 @@ import { Student } from '../models/Student';
 import { User } from '../models/User';
 
 import { auth } from '../middlewares/auth';
-import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
+import { mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { SendOnError } from '../utils/functions';
 
 const router = express.Router();
@@ -36,14 +36,18 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   }
 });
 
-router.delete('/:username/:classId', auth, mustBeClassOwner, async (req, res) => {
+router.delete('/:username/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
-    await Student.destroy({
+    const unEnrolled = await Student.destroy({
       where: {
         classId: req.params.classId,
         username: req.params.username,
       },
     });
+
+    if (!unEnrolled) {
+      throw new Error();
+    }
 
     res.send();
   } catch (e) {

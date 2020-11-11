@@ -1,10 +1,14 @@
 import express, { Request, Response } from 'express';
+import multer from 'multer';
+import sharp from 'sharp';
+import { nanoid } from 'nanoid';
 
 import { User } from '../models/User';
 
 import { auth } from '../middlewares/auth';
 
 import { SendOnError } from '../utils/functions';
+import { avatarPath } from '../utils/paths';
 
 const router = express.Router();
 
@@ -80,6 +84,57 @@ router.post('/logout', auth, async (req, res) => {
     res.send();
   } catch (e) {
     SendOnError(e, res);
+  }
+});
+
+const upload = multer({
+  limits: {
+    fileSize: 5 * 1000000,
+  },
+  fileFilter(_req, file, cb) {
+    if (!file.originalname.match(/\.(png|jpeg|jpg)$/i)) {
+      return cb(Error('Unsupported files uploaded to server'));
+    }
+
+    return cb(null, true);
+  },
+});
+
+const mediaMiddleware = upload.fields([
+  { name: 'avatar', maxCount: 1 },
+]);
+
+router.put('/', auth, mediaMiddleware, async (req, res) => {
+  const data = JSON.parse(req.body.info);
+  const queries = Object.keys(data);
+  const allowedQueries = ['name'];
+  const isValid = queries.every((query) => allowedQueries.includes(query));
+
+  if (!isValid) {
+    return res.status(400).send({ error: 'Invalid params.' });
+  }
+
+  try {
+    const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
+    let fileName = '';
+    if (files.avatar !== undefined) {
+      const { buffer } = files.classPhoto[0];
+
+      fileName = `${nanoid()}.png`;
+      await sharp(buffer).png({ compressionLevel: 6 }).toFile(`${avatarPath}/${fileName}`);
+      data.avatar = fileName;
+    }
+
+    const userToUpdate = await User.update(data, {
+      where: {
+        username: req.user!.username,
+      },
+      returning: true,
+    });
+
+    return res.send({ user: userToUpdate[1][0] });
+  } catch (e) {
+    return SendOnError(e, res);
   }
 });
 

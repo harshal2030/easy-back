@@ -63,6 +63,25 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   }
 });
 
+router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
+  try {
+    const quiz = await Quiz.findOne({
+      where: {
+        classId: req.params.classId,
+        quizId: req.params.quizId,
+      },
+    });
+
+    if (!quiz) {
+      throw new Error();
+    }
+
+    res.send(quiz);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
 router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
   if (req.body.quizId) {
     return res.status(400).send({ Error: 'Invalid params' });
@@ -86,7 +105,7 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
   }
 });
 
-router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => {
+router.get('/que/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
     const quiz = await Quiz.findOne({
       where: {
@@ -167,6 +186,37 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
     }
 
     return res.send();
+  } catch (e) {
+    return SendOnError(e, res);
+  }
+});
+
+router.put('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
+  const queries = Object.keys(req.body);
+  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomOp', 'randomQue'];
+  const isValid = queries.every((query) => allowedQueries.includes(query));
+
+  if (!isValid) {
+    return res.send({ error: 'Bad request parameters' });
+  }
+  try {
+    const range = req.body.timePeriod ? [
+      { value: req.body.timePeriod[0], inclusive: true },
+      { value: req.body.timePeriod[1], inclusive: true },
+    ] : null;
+
+    const updatedQuiz = await Quiz.update({
+      ...req.body,
+      timePeriod: range,
+    }, {
+      where: {
+        classId: req.params.classId,
+        quizId: req.params.quizId,
+      },
+      returning: true,
+    });
+
+    return res.send(updatedQuiz[1][0]);
   } catch (e) {
     return SendOnError(e, res);
   }
