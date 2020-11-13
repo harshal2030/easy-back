@@ -1,8 +1,10 @@
 import express from 'express';
+import multer from 'multer';
+import XLSX from 'xlsx';
 import { Op } from 'sequelize';
 import sequelize from '../db';
 
-import { Question } from '../models/Questions';
+import { Question, queSheet } from '../models/Questions';
 import { Quiz } from '../models/Quiz';
 import { Result } from '../models/Result';
 
@@ -82,22 +84,52 @@ router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
   }
 });
 
-router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
-  if (req.body.quizId) {
-    return res.status(400).send({ Error: 'Invalid params' });
+const upload = multer({
+  limits: {
+    fileSize: 50 * 1000000,
+  },
+  fileFilter(req, file, cb) {
+    if (!file.originalname.match(/\.(xlsx|xls)$/i)) {
+      return cb(Error('Unsupported files uploaded to server'));
+    }
+
+    return cb(null, true);
+  },
+});
+
+const mediaMiddleware = upload.fields([
+  { name: 'sheet', maxCount: 1 },
+]);
+
+router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res) => {
+  const data = JSON.parse(req.body.info);
+  const queries = Object.keys(data);
+  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomQue', 'randomOp'];
+  const isValid = queries.every((query) => allowedQueries.includes(query));
+
+  if (!isValid) {
+    res.status(400).send({ error: 'Invalid params sent' });
   }
 
-  const range = req.body.timePeriod ? [
-    { value: req.body.timePeriod[0], inclusive: true },
-    { value: req.body.timePeriod[1], inclusive: true },
+  const range = data.timePeriod ? [
+    { value: data.timePeriod[0], inclusive: true },
+    { value: data.timePeriod[1], inclusive: true },
   ] : null;
 
   try {
     const quiz = await Quiz.create({
-      ...req.body,
+      ...data,
       timePeriod: range,
       classId: req.params.classId,
     });
+
+    const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
+    const workbook = XLSX.read(files.sheet[0].buffer);
+    const sheets = workbook.SheetNames;
+    const queData = XLSX.utils.sheet_to_json<queSheet>(workbook.Sheets[sheets[0]]);
+    const formattedData = Question.formatQueSheet(queData, quiz.quizId);
+
+    await Question.bulkCreate(formattedData);
 
     return res.status(201).send(quiz);
   } catch (e) {
