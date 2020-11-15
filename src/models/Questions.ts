@@ -2,7 +2,6 @@ import { Model, DataTypes } from 'sequelize';
 import { nanoid } from 'nanoid';
 
 import sequelize from '../db';
-import { Quiz } from './Quiz';
 
 interface QuestionAttr {
   quizId: string;
@@ -75,10 +74,6 @@ Question.init({
   quizId: {
     type: DataTypes.STRING,
     allowNull: false,
-    references: {
-      model: Quiz,
-      key: 'quizId',
-    },
   },
   queId: {
     type: DataTypes.STRING,

@@ -1,7 +1,13 @@
 module.exports = {
-  up: async (queryInterface, Sequelize) => (queryInterface.addColumn('Classes', 'lockJoin', Sequelize.BOOLEAN, {
-    defaultValue: false,
-  })), /**
+  up: async (queryInterface, Sequelize) => {
+    try {
+      await queryInterface.addColumn('Classes', 'lockJoin', Sequelize.BOOLEAN, {
+        defaultValue: false,
+      });
+    } catch (e) {
+      // move on
+    }
+  }, /**
      * Add altering commands here.
      *
      * Example:

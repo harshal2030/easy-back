@@ -1,7 +1,13 @@
 module.exports = {
-  up: async (queryInterface, Sequelize) => (queryInterface.addColumn('Classes', 'joinCode', Sequelize.STRING, {
-    allowNull: false,
-  })), /**
+  up: async (queryInterface, Sequelize) => {
+    try {
+      await queryInterface.addColumn('Classes', 'joinCode', Sequelize.STRING, {
+        allowNull: false,
+      });
+    } catch (e) {
+      // move
+    }
+  }, /**
      * Add altering commands here.
      *
      * Example:

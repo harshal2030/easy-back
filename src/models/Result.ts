@@ -18,7 +18,9 @@ class Result extends Model implements ResultAttr {
   public static async getCorrectResponses(queInfo: {queId: string; response: string;}[]) {
     const ques = await Question.findAll({
       where: {
-        [Op.in]: queInfo.map((que) => que.queId),
+        queId: {
+          [Op.in]: queInfo.map((que) => que.queId),
+        },
       },
       attributes: ['score', 'queId', 'correct'],
     });

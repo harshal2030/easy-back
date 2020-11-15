@@ -1,8 +1,14 @@
 module.exports = {
-  up: async (queryInterface, Sequelize) => (queryInterface.addColumn('Users', 'avatar', Sequelize.STRING, {
-    allowNull: false,
-    defaultValue: 'default.png',
-  })), /**
+  up: async (queryInterface, Sequelize) => {
+    try {
+      await queryInterface.addColumn('Users', 'avatar', Sequelize.STRING, {
+        allowNull: false,
+        defaultValue: 'default.png',
+      });
+    } catch (e) {
+      // continue
+    }
+  }, /**
      * Add altering commands here.
      *
      * Example:

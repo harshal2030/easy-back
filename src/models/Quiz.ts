@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { Model, DataTypes } from 'sequelize';
 import sequelize from '../db';
 import { Class } from './Class';
+import { Result } from './Result';
 
 interface QuizAttr {
   classId: string;
@@ -17,6 +18,7 @@ interface QuizAttr {
   releaseScore: boolean;
   randomQue: boolean;
   randomOp: boolean;
+  multipleSubmit: boolean;
 }
 
 class Quiz extends Model implements QuizAttr {
@@ -37,6 +39,8 @@ class Quiz extends Model implements QuizAttr {
   public randomQue!: boolean;
 
   public randomOp!: boolean;
+
+  public multipleSubmit!: boolean;
 
   public readonly createdAt!: Date;
 
@@ -86,9 +90,19 @@ Quiz.init({
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },
+  multipleSubmit: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
 }, {
   sequelize,
   timestamps: true,
+});
+
+Quiz.hasMany(Result, {
+  as: 'result',
+  foreignKey: 'quizId',
+  sourceKey: 'quizId',
 });
 
 Quiz.belongsTo(Class, {
