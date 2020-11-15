@@ -1,5 +1,11 @@
 module.exports = {
-  up: async (queryInterface, Sequelize) => (queryInterface.renameColumn('Classes', 'owner', 'ownerRef')), /**
+  up: async (queryInterface, Sequelize) => {
+    try {
+      await queryInterface.renameColumn('Classes', 'owner', 'ownerRef');
+    } catch (e) {
+      // move on
+    }
+  }, /**
      * Add altering commands here.
      *
      * Example:

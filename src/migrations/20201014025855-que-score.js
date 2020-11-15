@@ -1,9 +1,15 @@
 module.exports = {
 
-  up: async (queryInterface, Sequelize) => (queryInterface.addColumn('Questions', 'score', Sequelize.INTEGER, {
-    allowNull: false,
-    defaultValue: 1,
-  })),
+  up: async (queryInterface, Sequelize) => {
+    try {
+      await queryInterface.addColumn('Questions', 'score', Sequelize.INTEGER, {
+        allowNull: false,
+        defaultValue: 1,
+      });
+    } catch (e) {
+      // move on
+    }
+  },
   /**
 
      * Add altering commands here.

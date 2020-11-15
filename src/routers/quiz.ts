@@ -54,8 +54,17 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
         where: {
           releaseScore: true,
           classId: req.params.classId,
+          '$result.responder$': req.user!.username,
         },
         order: [['createdAt', 'DESC']],
+        include: [
+          {
+            model: Result,
+            as: 'result',
+            attributes: [],
+            required: true,
+          },
+        ],
       });
     }
 
@@ -177,6 +186,19 @@ router.get('/que/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res)
       });
     }
 
+    if (!quiz.multipleSubmit) {
+      const hasSubmitted = await Result.findOne({
+        where: {
+          responder: req.user!.username,
+          quizId: req.params.quizId,
+        },
+      });
+
+      if (hasSubmitted) {
+        return res.status(400).send({ error: 'You have already responded' });
+      }
+    }
+
     const totalScore = questions.length === 0
       ? 0 : questions.map((que) => que.score).reduce((a, b) => a + b);
 
@@ -203,6 +225,19 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
       return res.status(404).send({ error: 'No such quiz found' });
     }
 
+    if (!quiz.multipleSubmit) {
+      const hasSubmitted = await Result.findOne({
+        where: {
+          responder: req.user!.username,
+          quizId: req.params.quizId,
+        },
+      });
+
+      if (hasSubmitted) {
+        return res.status(400).send({ error: 'You have already responded' });
+      }
+    }
+
     const response = await Result.create({
       quizId: req.params.quizId,
       responder: req.user!.username,
@@ -210,7 +245,7 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
     });
 
     if (quiz.releaseScore) {
-      const summary = Result.getCorrectResponses(response.response);
+      const summary = await Result.getCorrectResponses(response.response);
       return res.send({
         totalQues: quiz.questions,
         ...summary,
@@ -251,6 +286,37 @@ router.put('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
     return res.send(updatedQuiz[1][0]);
   } catch (e) {
     return SendOnError(e, res);
+  }
+});
+
+router.delete('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const deletedQuiz = await Quiz.destroy({
+      where: {
+        classId: req.params.classId,
+        quizId: req.params.quizId,
+      },
+    });
+
+    if (deletedQuiz) {
+      throw new Error();
+    }
+
+    await Question.destroy({
+      where: {
+        quizId: req.params.quizId,
+      },
+    });
+
+    await Result.destroy({
+      where: {
+        quizId: req.params.quizId,
+      },
+    });
+  } catch (e) {
+    await t.rollback();
+    SendOnError(e, res);
   }
 });
 

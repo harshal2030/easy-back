@@ -1,9 +1,11 @@
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     try {
-      await queryInterface.addColumn('Classes', 'subject', Sequelize.STRING);
+      await queryInterface.addColumn('Quizzes', 'multipleSubmit', Sequelize.STRING, {
+        allowNull: false,
+        defaultValue: false,
+      });
     } catch (e) {
-
       // move on
     }
   }, /**
@@ -13,7 +15,7 @@ module.exports = {
      * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
      */
 
-  down: async (queryInterface, Sequelize) => (queryInterface.removeColumn('Classes', 'subject')),
+  down: async (queryInterface, Sequelize) => (queryInterface.removeColumn('Quizzes', 'multipleSubmit')),
   /**
      * Add reverting commands here.
      *
