@@ -113,7 +113,7 @@ const mediaMiddleware = upload.fields([
 router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res) => {
   const data = JSON.parse(req.body.info);
   const queries = Object.keys(data);
-  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomQue', 'randomOp'];
+  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomQue', 'randomOp', 'multipleSubmit'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
@@ -260,7 +260,7 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
 
 router.put('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
   const queries = Object.keys(req.body);
-  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomOp', 'randomQue'];
+  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomOp', 'randomQue', 'multipleSubmit'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
@@ -292,28 +292,41 @@ router.put('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
 router.delete('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const deletedQuiz = await Quiz.destroy({
+    const quiz = await Quiz.findOne({
       where: {
         classId: req.params.classId,
         quizId: req.params.quizId,
       },
     });
 
-    if (deletedQuiz) {
+    if (!quiz) {
       throw new Error();
     }
+
+    await Quiz.destroy({
+      where: {
+        classId: req.params.classId,
+        quizId: req.params.quizId,
+      },
+      transaction: t,
+    });
 
     await Question.destroy({
       where: {
         quizId: req.params.quizId,
       },
+      transaction: t,
     });
 
     await Result.destroy({
       where: {
         quizId: req.params.quizId,
       },
+      transaction: t,
     });
+
+    await t.commit();
+    res.send();
   } catch (e) {
     await t.rollback();
     SendOnError(e, res);
