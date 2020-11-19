@@ -3,5 +3,17 @@
     "fieldname",
     "originalname"
   ],
-  "typescript.tsdk": "node_modules\\typescript\\lib"
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "dev",
+      "database": "easy",
+      "username": "harshal",
+      "password": "AJHK@221133"
+    }
+  ]
 }

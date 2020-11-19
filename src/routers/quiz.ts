@@ -247,7 +247,7 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
     if (quiz.releaseScore) {
       const summary = await Result.getCorrectResponses(response.response);
       return res.send({
-        totalQues: quiz.questions,
+        totalQues: response.response.length,
         ...summary,
       });
     }
