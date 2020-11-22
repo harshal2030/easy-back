@@ -23,23 +23,14 @@ router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => 
       return res.status(404).send({ error: 'Requested object not found' });
     }
 
-    const rawResult = await Result.findOne({
-      where: {
-        quizId: quiz.quizId,
-        responder: req.user!.username,
-      },
-      attributes: ['response'],
-    });
+    const response = await Result.getResponses(req.user!.username, quiz.quizId);
 
-    if (!rawResult) {
-      return res.status(404).send({ error: 'Requested object not found' });
+    if (response.length === 0) {
+      return res.status(404).send();
     }
 
-    const summary = await Result.getCorrectResponses(rawResult.response);
-    return res.send({
-      ...summary,
-      totalQues: rawResult.response.length,
-    });
+    const scoreSummary = Result.getScoreSummary(response);
+    return res.send(scoreSummary);
   } catch (e) {
     return SendOnError(e, res);
   }
@@ -58,18 +49,29 @@ router.get('/file/:classId/:quizId', async (req, res) => {
       throw new Error();
     }
 
-    const results = await Result.findAll({
-      where: {
-        quizId: req.params.quizId,
-      },
+    const results = await Result.getAllResponses(quiz.quizId);
+
+    const rtl: {
+      totalScore: number;
+      userScored: number;
+      correct: number;
+      incorrect: number;
+      totalQues: number;
+      responder: string;
+    }[] = [];
+
+    const responders = Object.keys(results);
+    responders.forEach((resp) => {
+      const scoreSummary = Result.getScoreSummary(results[resp]);
+      rtl.push({
+        ...scoreSummary,
+        responder: results[resp][0].responder.name,
+      });
     });
 
-    const file = XLSX.utils.json_to_sheet(results.map((val) => ({
-      id: val.quizId,
-      user: val.responder,
-    })));
+    const file = XLSX.utils.json_to_sheet(rtl);
 
-    const stream = XLSX.stream.to_csv(file);
+    const stream: NodeJS.ReadWriteStream = XLSX.stream.to_csv(file);
 
     res.setHeader('Content-disposition', `attachment; filename=${quiz.title}.csv`);
     res.set('Content-Type', 'text/csv');

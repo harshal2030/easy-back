@@ -238,19 +238,11 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
       }
     }
 
-    const response = await Result.create({
+    await Result.create({
       quizId: req.params.quizId,
       responder: req.user!.username,
       response: req.body.response,
     });
-
-    if (quiz.releaseScore) {
-      const summary = await Result.getCorrectResponses(response.response);
-      return res.send({
-        totalQues: response.response.length,
-        ...summary,
-      });
-    }
 
     return res.send();
   } catch (e) {
