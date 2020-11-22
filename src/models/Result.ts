@@ -1,6 +1,6 @@
-import { Model, DataTypes, Op } from 'sequelize';
+import { Model, DataTypes } from 'sequelize';
+import _ from 'lodash';
 import sequelize from '../db';
-import { Question } from './Questions';
 
 interface ResultAttr {
   quizId: string;
@@ -15,29 +15,75 @@ class Result extends Model implements ResultAttr {
 
   public response!: {queId: string; response: string}[];
 
-  public static async getCorrectResponses(queInfo: {queId: string; response: string;}[]) {
-    const ques = await Question.findAll({
-      where: {
-        queId: {
-          [Op.in]: queInfo.map((que) => que.queId),
-        },
-      },
-      attributes: ['score', 'queId', 'correct'],
+  public static getScoreSummary(queInfo: {
+    queId: string; response: string; correct: string; score: number;
+  }[]) {
+    let totalScore = 0;
+    let userScored = 0;
+    let correct = 0;
+    let incorrect = 0;
+
+    queInfo.forEach((que) => {
+      totalScore += que.score;
+
+      if (que.response === que.correct) {
+        userScored += que.score;
+        correct += 1;
+      } else {
+        incorrect += 1;
+      }
     });
-
-    const userResponses = queInfo.map((que) => que.response);
-    const correctResponses = ques.filter((que) => userResponses.includes(que.correct));
-
-    const totalScore = ques.length === 0 ? 0 : ques.map((que) => que.score).reduce((a, b) => a + b);
-    const userScored = correctResponses.length === 0
-      ? 0 : correctResponses.map((que) => que.score).reduce((a, b) => a + b);
 
     return {
       totalScore,
       userScored,
-      correct: correctResponses.length,
-      incorrect: userResponses.length - correctResponses.length,
+      correct,
+      incorrect,
+      totalQues: queInfo.length,
     };
+  }
+
+  static async getResponses(responder: string, quizId: string) {
+    const result = await sequelize.query(`WITH res AS (
+        SELECT "queId", items.response, "quizId", "responder" "responder.username" FROM "Results",
+        jsonb_to_recordset("Results".response) AS items("queId" VARCHAR(30), response TEXT)
+        WHERE "quizId"=:quizId AND responder = :responder
+      )
+      SELECT score, response, q.correct, q."queId", "responder.username"
+      FROM "Questions" q INNER JOIN res USING("queId")`, {
+      replacements: { quizId, responder },
+      raw: true,
+      nest: true,
+    });
+
+    return result as unknown as {
+      score: number; response: string; correct: string; queId: string; responder: {username: string}
+    }[];
+  }
+
+  static async getAllResponses(quizId: string) {
+    const q = await sequelize.query(`WITH res AS (
+      SELECT "queId", items.response, "quizId", "responder" FROM "Results",
+      jsonb_to_recordset("Results".response) AS items("queId" VARCHAR(30), response TEXT)
+      WHERE "quizId"=:quizId
+    )
+    SELECT score, response, q.correct, q."queId", responder "responder.username", u.name "responder.name"
+    FROM "Questions" q INNER JOIN res USING("queId")
+    INNER JOIN "Users" u ON responder = u.username`, {
+      replacements: { quizId },
+      raw: true,
+      nest: true,
+    });
+
+    const raw = q as unknown as {
+      score: number; response: string; correct: string; queId: string; responder: {
+        username: string; name: string;
+      };
+    }[];
+
+    const result = _.groupBy(raw, (res) => res.responder.username);
+
+    return result;
   }
 }
 
