@@ -1,16 +1,24 @@
 import { nanoid } from 'nanoid';
 import { Model, DataTypes } from 'sequelize';
+
 import sequelize from '../db';
+import { User } from './User';
 
 interface AnnouncementAttr {
   id: string;
+  author: string;
   message: string;
+  classId: string;
 }
 
 class Announcement extends Model implements AnnouncementAttr {
   public id!: string;
 
+  public author!: string;
+
   public message!: string;
+
+  public classId!: string;
 
   public readonly createdAt!: Date;
 
@@ -24,6 +32,10 @@ Announcement.init({
     unique: true,
     defaultValue: () => nanoid(25),
   },
+  author: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
   message: {
     type: DataTypes.TEXT,
     allowNull: false,
@@ -35,9 +47,19 @@ Announcement.init({
       },
     },
   },
+  classId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
 }, {
   sequelize,
   timestamps: true,
+});
+
+Announcement.belongsTo(User, {
+  as: 'user',
+  foreignKey: 'author',
+  targetKey: 'username',
 });
 
 export { Announcement, AnnouncementAttr };
