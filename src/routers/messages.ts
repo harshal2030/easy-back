@@ -3,6 +3,7 @@ import express from 'express';
 import { Announcement } from '../models/Announcement';
 import { User } from '../models/User';
 
+import { Notification } from '../services';
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { SendOnError } from '../utils/functions';
@@ -17,7 +18,26 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
       classId: req.params.classId,
     });
 
-    res.send(message);
+    Notification.sendMsgToAllClassMember(req.params.classId, `${req.user!.username} made a Announcement`, message.message, {
+      message: message.message,
+      name: req.user!.name,
+      username: req.user!.username,
+      avatar: req.user!.avatar,
+      id: message.id,
+      classId: message.classId,
+      createdAt: message.createdAt.toString(),
+    });
+
+    res.send({
+      message: message.message,
+      user: {
+        name: req.user!.name,
+        username: req.user!.username,
+        avatar: req.user!.avatar,
+      },
+      id: message.id,
+      createdAt: message.createdAt,
+    });
   } catch (e) {
     SendOnError(e, res);
   }
@@ -25,15 +45,10 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
 
 router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
-    const offset = typeof req.query.offset === 'string' ? parseInt(req.query.offset, 10) : 0;
-    const limit = typeof req.query.limit === 'string' ? parseInt(req.query.limit, 10) : 20;
-
     const msgs = await Announcement.findAll({
       where: {
         classId: req.params.classId,
       },
-      offset,
-      limit,
       include: [
         {
           model: User,
@@ -43,6 +58,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
         },
       ],
       attributes: ['createdAt', 'message', 'id'],
+      order: [['createdAt', 'DESC']],
     });
 
     res.send(msgs);

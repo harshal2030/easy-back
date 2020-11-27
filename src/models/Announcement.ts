@@ -23,6 +23,8 @@ class Announcement extends Model implements AnnouncementAttr {
   public readonly createdAt!: Date;
 
   public readonly updatedAt!: Date;
+
+  public readonly user?: User;
 }
 
 Announcement.init({
