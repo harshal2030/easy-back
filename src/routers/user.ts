@@ -4,11 +4,13 @@ import sharp from 'sharp';
 import { nanoid } from 'nanoid';
 
 import { User } from '../models/User';
+import { Device } from '../models/Device';
 
 import { auth } from '../middlewares/auth';
 
 import { SendOnError } from '../utils/functions';
 import { avatarPath } from '../utils/paths';
+import sequelize from '../db';
 
 const router = express.Router();
 
@@ -19,6 +21,10 @@ interface SignUpReq extends Request {
       username: string;
       email: string;
       password: string;
+    };
+    device?: {
+      os: string;
+      fcmToken: string;
     }
   }
 }
@@ -28,6 +34,10 @@ interface LoginReq extends Request {
     user: {
       username: string;
       password: string;
+    };
+    device? :{
+      fcmToken: string;
+      os: string;
     }
   }
 }
@@ -44,6 +54,14 @@ router.post('/create', async (req: SignUpReq, res: Response) => {
     const user = await User.create(req.body.user);
     const token = await user.generateJwt();
 
+    if (req.body.device) {
+      Device.create({
+        ...req.body.device,
+        username: req.body.user.username,
+        token,
+      });
+    }
+
     return res.status(201).send({ user, token });
   } catch (e) {
     return SendOnError(e, res);
@@ -54,6 +72,14 @@ router.post('/login', async (req: LoginReq, res: Response) => {
   try {
     const user = await User.checkUsernameAndPass(req.body.user.username, req.body.user.password);
     const token = await user.generateJwt();
+
+    if (req.body.device) {
+      Device.create({
+        ...req.body.device,
+        username: user.username,
+        token,
+      });
+    }
 
     res.send({ user, token });
   } catch (e) {
@@ -70,19 +96,39 @@ router.get('/token', auth, async (req, res) => {
 });
 
 router.post('/logout', auth, async (req, res) => {
+  const t = await sequelize.transaction();
   try {
-    req.user!.tokens.filter((value) => value !== req.token!);
+    const tokens = req.user!.tokens.filter((value) => value !== req.token!);
 
-    await User.update({
-      tokens: req.user!.tokens,
+    const updated = await User.update({
+      tokens,
     }, {
       where: {
         username: req.user!.username,
       },
+      transaction: t,
     });
+
+    if (!updated) {
+      throw new Error();
+    }
+
+    const deletedDevices = await Device.destroy({
+      where: {
+        token: req.token!,
+      },
+      transaction: t,
+    });
+
+    if (!deletedDevices) {
+      throw new Error();
+    }
+
+    await t.commit();
 
     res.send();
   } catch (e) {
+    await t.rollback();
     SendOnError(e, res);
   }
 });

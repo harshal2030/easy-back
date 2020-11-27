@@ -2,6 +2,7 @@ import { Model, DataTypes } from 'sequelize';
 import sequelize from '../db';
 import { Class } from './Class';
 import { User } from './User';
+import { Device } from './Device';
 
 interface StudentAttr {
   id: number;
@@ -21,6 +22,8 @@ class Student extends Model implements StudentAttr {
   public readonly updatedAt!: Date;
 
   public readonly student?: User;
+
+  public readonly device?: Device;
 }
 
 Student.init({
@@ -40,6 +43,13 @@ Student.init({
   sequelize,
   timestamps: true,
 });
+
+Student.belongsTo(Device, {
+  as: 'device',
+  foreignKey: 'username',
+  targetKey: 'username',
+});
+
 Student.belongsTo(User, {
   foreignKey: 'username',
   targetKey: 'username',
