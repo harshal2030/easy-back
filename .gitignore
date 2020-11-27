@@ -22,6 +22,7 @@ lerna-debug.log*
 config.json
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+easy-3e6d3-firebase-adminsdk-gcs05-1225a2de68.json
 
 .VSCodeCounter/
 apidoc/
