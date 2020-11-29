@@ -1,9 +1,18 @@
 import express from 'express';
+import path from 'path';
 
 import { SendOnError } from '../utils/functions';
 import { avatarPath, classImagePath } from '../utils/paths';
 
 const router = express.Router();
+
+router.get('/sample', async (_req, res) => {
+  try {
+    res.sendFile(path.join(__dirname, '../../sample.xlsx'));
+  } catch (e) {
+    res.status(500).send();
+  }
+});
 
 router.get('/avatar/:filename', async (req, res) => {
   try {
