@@ -15,6 +15,7 @@ const mustBeClassOwner = async (req: Request, res: Response, next: NextFunction)
       throw new Error();
     }
 
+    req.ownerClass = owner;
     next();
   } catch (e) {
     res.status(401).send({ error: "You're forbidden to access this resource" });

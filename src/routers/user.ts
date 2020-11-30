@@ -1,16 +1,16 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
-import sharp from 'sharp';
 import { nanoid } from 'nanoid';
 
 import { User } from '../models/User';
 import { Device } from '../models/Device';
+import sequelize from '../db';
 
 import { auth } from '../middlewares/auth';
 
 import { SendOnError } from '../utils/functions';
 import { avatarPath } from '../utils/paths';
-import sequelize from '../db';
+import { FileStorage } from '../services/FileStorage';
 
 const router = express.Router();
 
@@ -163,12 +163,17 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
   try {
     const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
     let fileName = '';
+
     if (files.avatar !== undefined) {
       const { buffer } = files.classPhoto[0];
 
       fileName = `${nanoid()}.png`;
-      await sharp(buffer).png({ compressionLevel: 6 }).toFile(`${avatarPath}/${fileName}`);
+      await FileStorage.saveImageFromBuffer(buffer, fileName, avatarPath);
       data.avatar = fileName;
+
+      if (req.user!.avatar !== 'default.png') {
+        FileStorage.deleteFile(req.user!.avatar, avatarPath);
+      }
     }
 
     const userToUpdate = await User.update(data, {

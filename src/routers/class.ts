@@ -1,9 +1,9 @@
-import express, { Request, Response, Express } from 'express';
+import express, { Request, Response } from 'express';
 import multer from 'multer';
-import sharp from 'sharp';
 import { nanoid } from 'nanoid';
 import { Op } from 'sequelize';
 
+import { FileStorage } from '../services/FileStorage';
 import { SendOnError } from '../utils/functions';
 import { classImagePath } from '../utils/paths';
 
@@ -49,7 +49,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       const { buffer } = files.classPhoto[0];
 
       fileName = `${nanoid()}.png`;
-      await sharp(buffer).png({ compressionLevel: 6 }).toFile(`${classImagePath}/${fileName}`);
+      await FileStorage.saveImageFromBuffer(buffer, fileName, classImagePath);
     }
 
     const section = await Class.create({ ...data, ownerRef: req.user!.username, photo: fileName });
@@ -176,8 +176,12 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
       const { buffer } = files.classPhoto[0];
 
       fileName = `${nanoid()}.png`;
-      await sharp(buffer).png({ compressionLevel: 6 }).toFile(`${classImagePath}/${fileName}`);
+      await FileStorage.saveImageFromBuffer(buffer, fileName, classImagePath);
       data.photo = fileName;
+
+      if (!req.ownerClass!.photo) {
+        FileStorage.deleteFile(req.ownerClass!.photo, classImagePath);
+      }
     }
 
     const classToUpdate = await Class.update({ ...data }, {
