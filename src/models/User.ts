@@ -56,6 +56,20 @@ class User extends Model implements UserAttr {
     return token;
   }
 
+  public static generateJWTAndUpdateArray(
+    username: string, oldToken: string, tokens: string[],
+  ): {token: string; tokens: string[]} {
+    const newToken = jwt.sign({ username }, privateKey, { algorithm: 'RS256' });
+    const oldTokenIndex = tokens.indexOf(oldToken);
+    const tokensArray = [...tokens];
+
+    if (oldTokenIndex !== -1) {
+      tokensArray[oldTokenIndex] = newToken;
+    }
+
+    return { token: newToken, tokens: tokensArray };
+  }
+
   public static async checkUsernameAndPass(username: string, password: string): Promise<User> {
     const user = await User.findOne({
       where: {

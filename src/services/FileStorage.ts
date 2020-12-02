@@ -10,7 +10,7 @@ class FileStorage {
 
   static async saveImageFromBuffer(buffer: Buffer, fileName: string, prefixPath?: string) {
     if (prefixPath) {
-      await sharp(buffer).png({ compressionLevel: 6 }).toFile(`${fileName}/${prefixPath}`);
+      await sharp(buffer).png({ compressionLevel: 6 }).toFile(`${prefixPath}/${fileName}`);
     }
   }
 }

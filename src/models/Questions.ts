@@ -66,6 +66,7 @@ class Question extends Model implements QuestionAttr {
       question: this.question,
       options: this.options,
       attachments: this.attachments,
+      score: this.score,
     };
   }
 }
