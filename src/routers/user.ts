@@ -153,7 +153,7 @@ const mediaMiddleware = upload.fields([
 router.put('/', auth, mediaMiddleware, async (req, res) => {
   const data = JSON.parse(req.body.info);
   const queries = Object.keys(data);
-  const allowedQueries = ['name'];
+  const allowedQueries = ['name', 'username'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
@@ -165,7 +165,7 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
     let fileName = '';
 
     if (files.avatar !== undefined) {
-      const { buffer } = files.classPhoto[0];
+      const { buffer } = files.avatar[0];
 
       fileName = `${nanoid()}.png`;
       await FileStorage.saveImageFromBuffer(buffer, fileName, avatarPath);
@@ -176,6 +176,15 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
       }
     }
 
+    let token = req.token!;
+
+    if (data.username) {
+      const newTokens = User.generateJWTAndUpdateArray(data.username, token!, req.user!.tokens);
+
+      token = newTokens.token;
+      data.tokens = newTokens.tokens;
+    }
+
     const userToUpdate = await User.update(data, {
       where: {
         username: req.user!.username,
@@ -183,8 +192,9 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
       returning: true,
     });
 
-    return res.send({ user: userToUpdate[1][0] });
+    return res.send({ user: userToUpdate[1][0], token });
   } catch (e) {
+    console.log(e);
     return SendOnError(e, res);
   }
 });
