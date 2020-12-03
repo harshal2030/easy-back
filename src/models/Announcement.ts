@@ -58,10 +58,4 @@ Announcement.init({
   timestamps: true,
 });
 
-Announcement.belongsTo(User, {
-  as: 'user',
-  foreignKey: 'author',
-  targetKey: 'username',
-});
-
 export { Announcement, AnnouncementAttr };
