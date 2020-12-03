@@ -2,6 +2,8 @@ import { nanoid } from 'nanoid';
 /* eslint-disable no-param-reassign */
 import { Model, DataTypes } from 'sequelize';
 import sequelize from '../db';
+import { Class } from './Class';
+import { Result } from './Result';
 
 interface QuizAttr {
   classId: string;
@@ -95,6 +97,18 @@ Quiz.init({
 }, {
   sequelize,
   timestamps: true,
+});
+
+Quiz.hasMany(Result, {
+  as: 'result',
+  foreignKey: 'quizId',
+  sourceKey: 'quizId',
+});
+
+Quiz.belongsTo(Class, {
+  as: 'class',
+  foreignKey: 'classId',
+  targetKey: 'id',
 });
 
 export { Quiz, QuizAttr };

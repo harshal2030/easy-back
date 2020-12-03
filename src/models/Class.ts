@@ -106,4 +106,16 @@ Class.init({
   timestamps: true,
 });
 
+Class.hasMany(Student, {
+  sourceKey: 'id',
+  foreignKey: 'classId',
+  as: 'students',
+});
+
+Class.belongsTo(User, {
+  as: 'owner',
+  foreignKey: 'ownerRef',
+  targetKey: 'username',
+});
+
 export { Class, ClassAttr };
