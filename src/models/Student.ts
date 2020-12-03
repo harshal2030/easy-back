@@ -1,6 +1,5 @@
 import { Model, DataTypes } from 'sequelize';
 import sequelize from '../db';
-import { Class } from './Class';
 import { User } from './User';
 import { Device } from './Device';
 
@@ -30,10 +29,6 @@ Student.init({
   classId: {
     type: DataTypes.STRING,
     allowNull: false,
-    references: {
-      model: Class,
-      key: 'id',
-    },
   },
   username: {
     type: DataTypes.STRING,
