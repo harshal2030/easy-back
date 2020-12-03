@@ -7,7 +7,7 @@ import sequelize from '../db/index';
 import { usernamePattern } from '../utils/regexPatterns';
 import { generateHash } from '../utils/functions';
 
-const privateKeyPath = path.join(__dirname, '../../keys/private.pem');
+const privateKeyPath = path.join(__dirname, '../../../keys/private.pem');
 const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
 
 interface UserAttr {

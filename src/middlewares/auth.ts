@@ -8,7 +8,7 @@ import fs from 'fs';
 
 import { User } from '../models/User';
 
-const publicKeyPath = path.join(__dirname, '../../keys/public.pem');
+const publicKeyPath = path.join(__dirname, '../../../keys/public.pem');
 const publicKey = fs.readFileSync(publicKeyPath, 'utf8');
 
 const auth = async (req: Request, res: Response, next: NextFunction) => {

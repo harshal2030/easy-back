@@ -1,7 +1,7 @@
 import firebase from 'firebase-admin';
 import app from './app';
 
-const serviceAccount = require('../easy-3e6d3-firebase-adminsdk-gcs05-1225a2de68.json');
+const serviceAccount = require('../../easy-3e6d3-firebase-adminsdk-gcs05-1225a2de68.json');
 
 firebase.initializeApp({
   credential: firebase.credential.cert(serviceAccount),
