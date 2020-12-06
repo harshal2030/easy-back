@@ -135,6 +135,9 @@ router.post('/join', auth, async (req, res) => {
       where: {
         joinCode: req.body.joinCode,
         lockJoin: false,
+        ownerRef: {
+          [Op.ne]: req.user!.username,
+        },
       },
       attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode'],
       include: [{
