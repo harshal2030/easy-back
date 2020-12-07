@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import XLSX from 'xlsx';
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import sequelize from '../db';
 
 import { Question, queSheet } from '../models/Questions';
@@ -38,11 +38,11 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
     if (fields.includes('expired')) {
       response.expired = await Quiz.findAll({
         where: {
-          [Op.not]: {
-            timePeriod: {
-              [Op.contains]: new Date(),
-            },
-          },
+          [Op.and]: [
+            Sequelize.where(Sequelize.fn('upper', Sequelize.col('timePeriod')), {
+              [Op.lt]: new Date(),
+            }),
+          ],
           classId: req.params.classId,
         },
         order: [['createdAt', 'DESC']],
@@ -70,6 +70,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
 
     res.send(response);
   } catch (e) {
+    console.log(e);
     SendOnError(e, res);
   }
 });
