@@ -17,5 +17,6 @@
       "username": "harshal",
       "password": "AJHK@221133"
     }
-  ]
+  ],
+  "python.pythonPath": "C:\\Users\\harshal\\miniconda3\\envs\\resttest\\python.exe"
 }
