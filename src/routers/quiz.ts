@@ -70,7 +70,6 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
 
     res.send(response);
   } catch (e) {
-    console.log(e);
     SendOnError(e, res);
   }
 });

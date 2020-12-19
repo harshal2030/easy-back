@@ -12,6 +12,7 @@ import queRouter from './routers/question';
 import studentRouter from './routers/students';
 import resultRouter from './routers/result';
 import messageRouter from './routers/messages';
+import moduleRouter from './routers/module';
 
 const app: Application = express();
 const server = http.createServer(app);
@@ -29,6 +30,7 @@ app.use('/que', queRouter);
 app.use('/student', studentRouter);
 app.use('/result', resultRouter);
 app.use('/msg', messageRouter);
+app.use('/module', moduleRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello');
