@@ -99,16 +99,4 @@ Quiz.init({
   timestamps: true,
 });
 
-Quiz.hasMany(Result, {
-  as: 'result',
-  foreignKey: 'quizId',
-  sourceKey: 'quizId',
-});
-
-Quiz.belongsTo(Class, {
-  as: 'class',
-  foreignKey: 'classId',
-  targetKey: 'id',
-});
-
 export { Quiz, QuizAttr };
