@@ -39,4 +39,16 @@ Student.init({
   timestamps: true,
 });
 
+Student.belongsTo(Device, {
+  as: 'device',
+  foreignKey: 'username',
+  targetKey: 'username',
+});
+
+Student.belongsTo(User, {
+  foreignKey: 'username',
+  targetKey: 'username',
+  as: 'student',
+});
+
 export { Student, StudentAttr };
