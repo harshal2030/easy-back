@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import { nanoid } from 'nanoid';
+import BasicAuth from 'express-basic-auth';
 
 import { User } from '../models/User';
 import { Device } from '../models/Device';
@@ -42,7 +43,13 @@ interface LoginReq extends Request {
   }
 }
 
-router.post('/create', async (req: SignUpReq, res: Response) => {
+const accountAuth = BasicAuth({
+  users: {
+    accountCreator: process.env.accPass!,
+  },
+});
+
+router.post('/create', accountAuth, async (req: SignUpReq, res: Response) => {
   const queries = Object.keys(req.body.user);
   const allowedQueries = ['name', 'username', 'email', 'password'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
@@ -68,7 +75,7 @@ router.post('/create', async (req: SignUpReq, res: Response) => {
   }
 });
 
-router.post('/login', async (req: LoginReq, res: Response) => {
+router.post('/login', accountAuth, async (req: LoginReq, res: Response) => {
   try {
     const user = await User.checkUsernameAndPass(req.body.user.username, req.body.user.password);
     const token = await user.generateJwt();
@@ -194,7 +201,6 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
 
     return res.send({ user: userToUpdate[1][0], token });
   } catch (e) {
-    console.log(e);
     return SendOnError(e, res);
   }
 });
