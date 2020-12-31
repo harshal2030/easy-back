@@ -22,6 +22,22 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
   }
 });
 
+router.delete('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
+  try {
+    await Module.destroy({
+      where: {
+        classId: req.params.classId,
+        id: req.params.moduleId,
+      },
+      limit: 1,
+    });
+
+    res.send();
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
 router.put('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
   try {
     const updatedModule = await Module.update({ title: req.body.title }, {
