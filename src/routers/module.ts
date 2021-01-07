@@ -46,6 +46,7 @@ router.put('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
         id: req.params.moduleId,
       },
       returning: true,
+      limit: 1,
     });
 
     res.send(updatedModule[1][0]);
