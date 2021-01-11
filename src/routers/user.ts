@@ -194,7 +194,6 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
 
     return res.send({ user: userToUpdate[1][0], token });
   } catch (e) {
-    console.log(e);
     return SendOnError(e, res);
   }
 });
