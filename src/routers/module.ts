@@ -62,6 +62,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
         classId: req.params.classId,
       },
       attributes: ['id', 'classId', 'title'],
+      order: ['title'],
     });
 
     res.send(modules);

@@ -135,7 +135,7 @@ router.post('/logout', auth, async (req, res) => {
 
 const upload = multer({
   limits: {
-    fileSize: 5 * 1000000,
+    fileSize: 5 * 1000000, // 5 mb
   },
   fileFilter(_req, file, cb) {
     if (!file.originalname.match(/\.(png|jpeg|jpg)$/i)) {
