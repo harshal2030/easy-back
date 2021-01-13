@@ -164,7 +164,7 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
     const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
     let fileName = '';
 
-    if (files.avatar !== undefined) {
+    if (files.avatar !== undefined) { // save and delete file if exists
       const { buffer } = files.avatar[0];
 
       fileName = `${nanoid()}.png`;
@@ -182,7 +182,7 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
       const newTokens = User.generateJWTAndUpdateArray(data.username, token!, req.user!.tokens);
 
       token = newTokens.token;
-      data.tokens = newTokens.tokens;
+      data.tokens = newTokens.tokens; // add tokens array to data to update db
     }
 
     const userToUpdate = await User.update(data, {
