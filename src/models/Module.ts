@@ -26,6 +26,9 @@ Module.init({
     primaryKey: true,
     defaultValue: () => nanoid(),
     allowNull: false,
+    set() {
+      this.setDataValue('id', nanoid());
+    },
   },
   title: {
     type: DataTypes.TEXT,

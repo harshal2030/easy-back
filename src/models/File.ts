@@ -25,6 +25,9 @@ File.init({
     primaryKey: true,
     allowNull: false,
     defaultValue: () => nanoid(),
+    set() {
+      this.setDataValue('id', nanoid());
+    },
   },
   moduleId: {
     type: DataTypes.STRING,

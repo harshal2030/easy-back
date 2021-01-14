@@ -61,6 +61,7 @@ Quiz.init({
     allowNull: false,
     unique: true,
     defaultValue: () => nanoid(),
+    primaryKey: true,
   },
   title: {
     type: DataTypes.STRING(50),
