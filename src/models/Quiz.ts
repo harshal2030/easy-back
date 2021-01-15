@@ -1,6 +1,6 @@
-import { nanoid } from 'nanoid';
 /* eslint-disable no-param-reassign */
 import { Model, DataTypes } from 'sequelize';
+import { nanoid } from 'nanoid';
 import sequelize from '../db';
 import { Class } from './Class';
 import { Result } from './Result';

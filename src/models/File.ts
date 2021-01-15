@@ -36,6 +36,13 @@ File.init({
   title: {
     type: DataTypes.TEXT,
     allowNull: false,
+    validate: {
+      checkEmptyString(value: string) {
+        if (value.trim().length === 0) {
+          throw new Error('Empty titles are not allowed');
+        }
+      },
+    },
   },
   filename: {
     type: DataTypes.TEXT,
