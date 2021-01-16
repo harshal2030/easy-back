@@ -2,6 +2,7 @@ import express from 'express';
 import BusBoy from 'busboy';
 import path from 'path';
 import fs from 'fs';
+import mime from 'mime-types';
 import { nanoid } from 'nanoid';
 
 import { Module } from '../models/Module';
@@ -77,9 +78,18 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
 
 router.get('/:classId/:moduleId/:filename', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
-    res.sendFile(`${modulePath}/${req.params.filename}`);
+    const filePath = `${modulePath}/${req.params.filename}`;
+    if (!fs.existsSync(filePath)) {
+      return res.sendStatus(404);
+    }
+
+    const stream = fs.createReadStream(filePath);
+    res.setHeader('Content-disposition', `attachment; filename=${req.params.filename}`);
+    res.setHeader('Content-Type', mime.contentType(req.params.filename) as string);
+    res.setHeader('Connection', 'close');
+    return stream.pipe(res);
   } catch (e) {
-    SendOnError(e, res);
+    return SendOnError(e, res);
   }
 });
 

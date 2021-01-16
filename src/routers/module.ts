@@ -7,9 +7,6 @@ import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 
 import { SendOnError } from '../utils/functions';
-import {
-  imageExtPattern, videoExtPattern, pptExtPattern, pdfExtPattern, docExtPattern, excelExtPattern,
-} from '../utils/regexPatterns';
 
 const router = express.Router();
 
@@ -81,44 +78,11 @@ router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) =
       where: {
         moduleId: req.params.moduleId,
       },
+      attributes: ['id', 'title', 'filename'],
+      order: [['createdAt', 'DESC']],
     });
 
-    const responseObj: {[field: string]: File[]} = {
-      image: [],
-      video: [],
-      doc: [],
-      pdf: [],
-      ppt: [],
-      excel: [],
-    };
-
-    files.forEach((file) => {
-      if (file.filename.match(imageExtPattern)) {
-        responseObj.image.push(file);
-      }
-
-      if (file.filename.match(videoExtPattern)) {
-        responseObj.video.push(file);
-      }
-
-      if (file.filename.match(pdfExtPattern)) {
-        responseObj.pdf.push(file);
-      }
-
-      if (file.filename.match(docExtPattern)) {
-        responseObj.doc.push(file);
-      }
-
-      if (file.filename.match(pptExtPattern)) {
-        responseObj.doc.push(file);
-      }
-
-      if (file.filename.match(excelExtPattern)) {
-        responseObj.excel.push(file);
-      }
-    });
-
-    res.send(responseObj);
+    res.send(files);
   } catch (e) {
     SendOnError(e, res);
   }
