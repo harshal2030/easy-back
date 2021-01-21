@@ -5,6 +5,7 @@ import BasicAuth from 'express-basic-auth';
 
 import { User } from '../models/User';
 import { Device } from '../models/Device';
+import { Student } from '../models/Student';
 import sequelize from '../db';
 
 import { auth } from '../middlewares/auth';
@@ -12,6 +13,8 @@ import { auth } from '../middlewares/auth';
 import { SendOnError } from '../utils/functions';
 import { avatarPath } from '../utils/paths';
 import { FileStorage } from '../services/FileStorage';
+import { Result } from '../models/Result';
+import { Announcement } from '../models/Announcement';
 
 const router = express.Router();
 
@@ -167,6 +170,8 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
     return res.status(400).send({ error: 'Invalid params.' });
   }
 
+  const t = await sequelize.transaction();
+
   try {
     const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
     let fileName = '';
@@ -190,6 +195,44 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
 
       token = newTokens.token;
       data.tokens = newTokens.tokens;
+
+      const studentUpdate = Student.update({
+        username: data.username,
+      }, {
+        where: {
+          username: req.user!.username,
+        },
+        transaction: t,
+      });
+
+      const resultUpdate = Result.update({
+        responder: data.username,
+      }, {
+        where: {
+          responder: req.user!.username,
+        },
+        transaction: t,
+      });
+
+      const deviceUpdate = Device.update({
+        username: data.username,
+      }, {
+        where: {
+          username: req.user!.username,
+        },
+        transaction: t,
+      });
+
+      const announceUpdate = Announcement.update({
+        author: data.username,
+      }, {
+        where: {
+          author: req.user!.username,
+        },
+        transaction: t,
+      });
+
+      await Promise.all([studentUpdate, resultUpdate, deviceUpdate, announceUpdate]);
     }
 
     const userToUpdate = await User.update(data, {
@@ -197,10 +240,14 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
         username: req.user!.username,
       },
       returning: true,
+      transaction: t,
     });
+
+    await t.commit();
 
     return res.send({ user: userToUpdate[1][0], token });
   } catch (e) {
+    await t.rollback();
     return SendOnError(e, res);
   }
 });
