@@ -1,5 +1,6 @@
 import express, { Application } from 'express';
 import http from 'http';
+import path from 'path';
 import compression from 'compression';
 import helmet from 'helmet';
 
@@ -32,6 +33,10 @@ app.use('/msg', messageRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello');
+});
+
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, '../privacy.html'));
 });
 
 export default server;
