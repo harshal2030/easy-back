@@ -3,6 +3,8 @@ import http from 'http';
 import path from 'path';
 import compression from 'compression';
 import helmet from 'helmet';
+import morgan from 'morgan';
+import fs from 'fs';
 
 // routers
 import userRouter from './routers/user';
@@ -21,6 +23,13 @@ app.use(compression());
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+if (process.env.NODE_ENV === 'production') {
+  const logStream = fs.createWriteStream(path.join(__dirname, '../../requests.log'), { flags: 'a' });
+  app.use(morgan('combined', { stream: logStream }));
+} else {
+  app.use(morgan('dev'));
+}
 
 app.use('/users', userRouter);
 app.use('/class', classRouter);
