@@ -4,7 +4,6 @@ import path from 'path';
 import compression from 'compression';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import fs from 'fs';
 
 // routers
 import userRouter from './routers/user';

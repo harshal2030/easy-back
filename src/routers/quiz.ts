@@ -32,6 +32,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
           classId: req.params.classId,
         },
         order: [['createdAt', 'DESC']],
+        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
       });
     }
 
@@ -46,6 +47,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
           classId: req.params.classId,
         },
         order: [['createdAt', 'DESC']],
+        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
       });
     }
 
@@ -57,11 +59,11 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
           '$result.responder$': req.user!.username,
         },
         order: [['createdAt', 'DESC']],
+        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
         include: [
           {
             model: Result,
             as: 'result',
-            attributes: [],
             required: true,
           },
         ],
@@ -70,7 +72,6 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
 
     res.send(response);
   } catch (e) {
-    console.log(e);
     SendOnError(e, res);
   }
 });
