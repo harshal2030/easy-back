@@ -24,10 +24,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-if (process.env.NODE_ENV === 'production') {
-  const logStream = fs.createWriteStream(path.join(__dirname, '../../requests.log'), { flags: 'a' });
-  app.use(morgan('combined', { stream: logStream }));
-} else {
+if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
