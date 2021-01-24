@@ -7,7 +7,7 @@
     "start:dev": "env-cmd ./config/dev.env nodemon build/index.js",
     "start:build": "tsc --watch",
     "start": "concurrently npm:start:*",
-    "test": "env-cmd ./config/test.env jest --runInBand --watchAll --verbose=true"
+    "test": "env-cmd ./config/test.env jest --runInBand --watchAll --verbose=false"
   },
   "author": "Harshal",
   "license": "ISC",

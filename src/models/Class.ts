@@ -71,6 +71,10 @@ Class.init({
     type: DataTypes.STRING,
     validate: {
       checkEmptySub(value: string) {
+        if (value === null) {
+          throw new Error('Please enter the subject for your class');
+        }
+
         if (value.trim().length < 1) {
           throw new Error('Please enter the subject for your class');
         }
