@@ -11,6 +11,7 @@ import { Question } from '../../src/models/Questions';
 import { Quiz } from '../../src/models/Quiz';
 import { Result } from '../../src/models/Result';
 import { Student } from '../../src/models/Student';
+import sequelize from '../../src/db';
 
 const privateKeyPath = path.join(__dirname, '../../../keys/private.pem');
 const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
@@ -61,6 +62,16 @@ const user2: UserAttr = {
   tokens: [jwt.sign({ username: 'john' }, privateKey, { algorithm: 'RS256' })],
 };
 
+const user3: UserAttr = {
+  id: 3,
+  name: 'john3',
+  username: 'john3',
+  avatar: 'default.png',
+  email: 'john3@doe.com',
+  password: 'jshlsdkjfghlsdfjghlsdfkgj',
+  tokens: [jwt.sign({ username: 'john3' }, privateKey, { algorithm: 'RS256' })],
+};
+
 const user2Device = {
   username: user2.username,
   token: user2.tokens[0],
@@ -70,9 +81,13 @@ const user2Device = {
 
 const SeedDB = async () => {
   try {
-    await User.bulkCreate([user1, user2]);
+    await User.bulkCreate([user1, user2, user3]);
     await Device.bulkCreate([user1Device, user2Device]);
     await Class.bulkCreate([user1Class, user1Class2]);
+    await Student.bulkCreate([
+      { username: user2.username, classId: user1Class.id },
+      { username: user2.username, classId: user1Class2.id },
+    ]);
   } catch (e) {
     console.log(e);
   }
@@ -88,11 +103,12 @@ const truncate = async () => {
     await Quiz.truncate();
     await Question.truncate();
     await Result.truncate();
+    await sequelize.close();
   } catch (e) {
     console.log(e);
   }
 };
 
 export {
-  user1, user2, user1Class, SeedDB, truncate, user1Class2,
+  user1, user2, user1Class, SeedDB, truncate, user1Class2, user3,
 };

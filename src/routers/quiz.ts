@@ -14,6 +14,59 @@ import { SendOnError, shuffleArray } from '../utils/functions';
 
 const router = express.Router();
 
+const upload = multer({
+  limits: {
+    fileSize: 50 * 1000000,
+  },
+  fileFilter(req, file, cb) {
+    if (!file.originalname.match(/\.(xlsx|xls)$/i)) {
+      return cb(Error('Unsupported files uploaded to server'));
+    }
+
+    return cb(null, true);
+  },
+});
+
+const mediaMiddleware = upload.fields([
+  { name: 'sheet', maxCount: 1 },
+]);
+
+router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res) => {
+  const data = JSON.parse(req.body.info);
+  const queries = Object.keys(data);
+  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomQue', 'randomOp', 'multipleSubmit'];
+  const isValid = queries.every((query) => allowedQueries.includes(query));
+
+  if (!isValid) {
+    res.status(400).send({ error: 'Invalid params sent' });
+  }
+
+  const range = data.timePeriod ? [
+    { value: data.timePeriod[0], inclusive: true },
+    { value: data.timePeriod[1], inclusive: true },
+  ] : null;
+
+  try {
+    const quiz = await Quiz.create({
+      ...data,
+      timePeriod: range,
+      classId: req.params.classId,
+    });
+
+    const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
+    const workbook = XLSX.read(files.sheet[0].buffer);
+    const sheets = workbook.SheetNames;
+    const queData = XLSX.utils.sheet_to_json<queSheet>(workbook.Sheets[sheets[0]]);
+    const formattedData = Question.formatQueSheet(queData, quiz.quizId);
+
+    await Question.bulkCreate(formattedData);
+
+    return res.status(201).send(quiz);
+  } catch (e) {
+    return SendOnError(e, res);
+  }
+});
+
 router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
     const requested = req.query.return as unknown as string | undefined;
@@ -92,59 +145,6 @@ router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
     res.send(quiz);
   } catch (e) {
     SendOnError(e, res);
-  }
-});
-
-const upload = multer({
-  limits: {
-    fileSize: 50 * 1000000,
-  },
-  fileFilter(req, file, cb) {
-    if (!file.originalname.match(/\.(xlsx|xls)$/i)) {
-      return cb(Error('Unsupported files uploaded to server'));
-    }
-
-    return cb(null, true);
-  },
-});
-
-const mediaMiddleware = upload.fields([
-  { name: 'sheet', maxCount: 1 },
-]);
-
-router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res) => {
-  const data = JSON.parse(req.body.info);
-  const queries = Object.keys(data);
-  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomQue', 'randomOp', 'multipleSubmit'];
-  const isValid = queries.every((query) => allowedQueries.includes(query));
-
-  if (!isValid) {
-    res.status(400).send({ error: 'Invalid params sent' });
-  }
-
-  const range = data.timePeriod ? [
-    { value: data.timePeriod[0], inclusive: true },
-    { value: data.timePeriod[1], inclusive: true },
-  ] : null;
-
-  try {
-    const quiz = await Quiz.create({
-      ...data,
-      timePeriod: range,
-      classId: req.params.classId,
-    });
-
-    const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
-    const workbook = XLSX.read(files.sheet[0].buffer);
-    const sheets = workbook.SheetNames;
-    const queData = XLSX.utils.sheet_to_json<queSheet>(workbook.Sheets[sheets[0]]);
-    const formattedData = Question.formatQueSheet(queData, quiz.quizId);
-
-    await Question.bulkCreate(formattedData);
-
-    return res.status(201).send(quiz);
-  } catch (e) {
-    return SendOnError(e, res);
   }
 });
 
