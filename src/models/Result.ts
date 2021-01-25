@@ -1,6 +1,14 @@
 import { Model, DataTypes } from 'sequelize';
 import _ from 'lodash';
+import Joi from 'joi';
 import sequelize from '../db';
+
+const schemaObject = Joi.object().keys({
+  queId: Joi.string().required(),
+  response: Joi.string().required(),
+});
+
+const schema = Joi.array().items(schemaObject);
 
 interface ResultAttr {
   quizId: string;
@@ -99,6 +107,14 @@ Result.init({
   response: {
     type: DataTypes.JSONB,
     defaultValue: [],
+    validate: {
+      validateResArray(value: any) {
+        const { error } = schema.validate(value);
+        if (error) {
+          throw new Error('Bad response structure');
+        }
+      },
+    },
   },
 }, {
   sequelize,
