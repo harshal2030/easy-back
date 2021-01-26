@@ -2,9 +2,11 @@ import req from 'supertest';
 import path from 'path';
 import app from '../src/app';
 import { Quiz } from '../src/models/Quiz';
+import { Result } from '../src/models/Result';
 import {
   user1, user1Class, SeedDB, truncate, user2, user3,
 } from './fixtures/db';
+import { Question } from '../src/models/Questions';
 
 beforeAll(SeedDB);
 
@@ -140,7 +142,13 @@ describe('Quiz update, post, getter tests', () => {
 });
 
 describe('Questions getters and post tests', () => {
-  let questions: any;
+  let questions: {
+    question: string;
+    queId: string;
+    attachments: string;
+    options: string[];
+    score: number
+  }[];
 
   test('Should not get the quiz info by non owner', async () => {
     await req(app)
@@ -204,6 +212,15 @@ describe('Questions getters and post tests', () => {
       releaseScore: expect.any(Boolean),
     });
 
+    const resultInDb = await Result.findOne({
+      where: {
+        quizId: QuizId,
+        responder: user1.username,
+      },
+    });
+
+    expect(resultInDb).not.toBeNull();
+
     await req(app)
       .post(`/quiz/${user1Class.id}/${QuizId}`)
       .set('Authorization', `Bearer ${user2.tokens[0]}`)
@@ -229,6 +246,74 @@ describe('Questions getters and post tests', () => {
         response: questions.map((val) => ({ queId: val.queId, response: val.options[1] })),
       })
       .expect(401);
+  });
+});
+
+describe('Result API tests', () => {
+  test('Should get the result', async () => {
+    const res = await req(app)
+      .get(`/result/${user1Class.id}/${QuizId}`)
+      .set('Authorization', `Bearer ${user1.tokens[0]}`)
+      .expect(200);
+
+    expect(res.body).toMatchObject({
+      totalScore: expect.any(Number),
+      userScored: expect.any(Number),
+      correct: expect.any(Number),
+      incorrect: expect.any(Number),
+      totalQues: expect.any(Number),
+    });
+
+    await req(app)
+      .get(`/result/${user1Class.id}/${QuizId}`)
+      .set('Authorization', `Bearer ${user2.tokens[0]}`)
+      .expect(200);
+  });
+
+  test('Should not get the result by outsider', async () => {
+    await req(app)
+      .get(`/result/${user1Class.id}/${QuizId}`)
+      .set('Authorization', `Bearer ${user3.tokens[0]}`)
+      .expect(401);
+  });
+});
+
+describe('Quiz deletion tests', () => {
+  test('Should not delete test by outsiders', async () => {
+    await req(app)
+      .delete(`/quiz/${user1Class.id}/${QuizId}`)
+      .set('Authorization', `Bearer ${user2.tokens[0]}`)
+      .expect(401);
+  });
+
+  test('Should delete test by owner', async () => {
+    await req(app)
+      .delete(`/quiz/${user1Class.id}/${QuizId}`)
+      .set('Authorization', `Bearer ${user1.tokens[0]}`)
+      .expect(200);
+
+    const quizInDb = await Quiz.findOne({
+      where: {
+        quizId: QuizId,
+        classId: user1Class.id,
+      },
+    });
+
+    const queInDb = await Question.findAll({
+      where: {
+        quizId: QuizId,
+      },
+    });
+
+    const resultInDb = await Result.findAll({
+      where: {
+        quizId: QuizId,
+      },
+    });
+
+    expect(quizInDb).toBeNull();
+    expect(queInDb.length).toBe(0);
+    expect(resultInDb.length).toBe(0);
   });
 });
 
