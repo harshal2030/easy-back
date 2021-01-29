@@ -112,7 +112,17 @@ describe('tests for token validation, logout and profile update', () => {
       .set('Authorization', `Bearer ${user1.tokens[0]}`)
       .expect(200);
 
-    expect(res.body.username).toEqual(user1.username);
+    const checkMessage = ['CONTINUE', 'UPDATE_REQUIRED', 'SERVER_MAINTENANCE'].filter((val) => val === res.body.message).length;
+    expect(checkMessage).toBeGreaterThan(0);
+
+    expect(res.body).toMatchObject({
+      user: {
+        name: user1.name,
+        username: user1.username,
+        avatar: user1.avatar,
+      },
+      message: expect.any(String),
+    });
   });
 
   test('Should log out', async () => {

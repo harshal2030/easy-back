@@ -99,7 +99,12 @@ router.post('/login', accountAuth, async (req: LoginReq, res: Response) => {
 
 router.get('/token', auth, async (req, res) => {
   try {
-    res.send(req.user!);
+    // message have possible values: 'CONTINUE' | 'UPDATE_REQUIRED' | 'SERVER_MAINTENANCE'
+    // this message are meant to be used in the front-end to force user for specific actions
+    // CONTINUE: Let the user move forward to app
+    // UPDATE_REQUIRED: force user to update app
+    // SERVER_MAINTENANCE: don't let user access service.
+    res.send({ user: req.user!, message: 'CONTINUE' });
   } catch (e) {
     SendOnError(e, res);
   }
