@@ -248,6 +248,7 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
 
     return res.send({ releaseScore: quiz.releaseScore });
   } catch (e) {
+    console.log(e);
     return SendOnError(e, res);
   }
 });
