@@ -216,6 +216,7 @@ router.get('/que/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res)
 
 router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
+    console.log(req.body);
     const quiz = await Quiz.findOne({
       where: {
         classId: req.params.classId,
