@@ -90,6 +90,10 @@ Question.init({
   },
   options: {
     type: DataTypes.ARRAY(DataTypes.TEXT),
+    set(val: any[]) {
+      const values = val.map((v) => v.toString());
+      this.setDataValue('options', values);
+    },
     validate: {
       checkLength(value: string[]) {
         if (value.length <= 0) {
@@ -101,6 +105,9 @@ Question.init({
   correct: {
     type: DataTypes.TEXT,
     allowNull: false,
+    set(val: any) {
+      this.setDataValue('correct', val.toString());
+    },
   },
   score: {
     type: DataTypes.INTEGER,

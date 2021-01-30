@@ -5,7 +5,7 @@ import sequelize from '../db';
 
 const schemaObject = Joi.object().keys({
   queId: Joi.string().required(),
-  response: Joi.string().required(),
+  response: Joi.string(),
 });
 
 const schema = Joi.array().items(schemaObject);
