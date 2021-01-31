@@ -58,6 +58,7 @@ router.get('/file/:classId/:quizId', async (req, res) => {
       incorrect: number;
       totalQues: number;
       responder: string;
+      notAnswered: number;
     }[] = [];
 
     const responders = Object.keys(results);

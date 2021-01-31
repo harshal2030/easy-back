@@ -216,7 +216,6 @@ router.get('/que/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res)
 
 router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
-    console.log(req.body);
     const quiz = await Quiz.findOne({
       where: {
         classId: req.params.classId,
@@ -226,6 +225,12 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
 
     if (!quiz) {
       return res.status(404).send({ error: 'No such quiz found' });
+    }
+
+    const now = new Date().getTime();
+
+    if (quiz.timePeriod[0].value.getTime() > now || quiz.timePeriod[1].value.getTime() < now) {
+      return res.status(400).send({ error: 'No longer accepting response' });
     }
 
     if (!quiz.multipleSubmit) {
@@ -249,7 +254,6 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
 
     return res.send({ releaseScore: quiz.releaseScore });
   } catch (e) {
-    console.log(e);
     return SendOnError(e, res);
   }
 });
