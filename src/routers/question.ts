@@ -127,6 +127,7 @@ router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
       where: {
         quizId: req.params.quizId,
       },
+      attributes: ['question', 'options', 'queId', 'attachments', 'score'],
     });
 
     return res.send(ques);
