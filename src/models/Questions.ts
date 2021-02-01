@@ -84,6 +84,18 @@ Question.init({
   },
   question: {
     type: DataTypes.TEXT,
+    allowNull: false,
+    validate: {
+      checkQuestion(value: string | null) {
+        if (!value) {
+          throw new Error('Empty questions are not allowed');
+        }
+
+        if (value.trim().length === 0) {
+          throw new Error('Empty questions are not allowed');
+        }
+      },
+    },
   },
   attachments: {
     type: DataTypes.STRING,
@@ -91,7 +103,7 @@ Question.init({
   options: {
     type: DataTypes.ARRAY(DataTypes.TEXT),
     set(val: any[]) {
-      const values = val.map((v) => v.toString());
+      const values = val.map((v) => v.toString()).filter((v: string) => v.trim().length !== 0);
       this.setDataValue('options', values);
     },
     validate: {
