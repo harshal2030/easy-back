@@ -11,6 +11,7 @@ import { Result } from '../models/Result';
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { SendOnError, shuffleArray } from '../utils/functions';
+import { Class } from '../models/Class';
 
 const router = express.Router();
 
@@ -71,22 +72,44 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
     const requested = req.query.return as unknown as string | undefined;
     const fields = requested ? requested.split(',') : ['live', 'expired'];
+    const now = new Date();
+
+    const classRequested = await Class.findOne({
+      where: {
+        ownerRef: req.user!.username,
+        id: req.params.classId,
+      },
+      attributes: ['ownerRef', 'id'],
+    });
 
     const response: {
       [fields: string]: Quiz[]
     } = { live: [], expired: [], scored: [] };
 
     if (fields.includes('live')) {
-      response.live = await Quiz.findAll({
-        where: {
-          timePeriod: {
-            [Op.contains]: new Date(),
+      if (!classRequested) {
+        response.live = await Quiz.findAll({
+          where: {
+            timePeriod: {
+              [Op.contains]: now,
+            },
+            classId: req.params.classId,
           },
-          classId: req.params.classId,
-        },
-        order: [['createdAt', 'DESC']],
-        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
-      });
+          order: [['createdAt', 'DESC']],
+          attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
+        });
+      } else {
+        response.live = await Quiz.findAll({
+          where: {
+            [Op.and]: [
+              Sequelize.where(Sequelize.fn('upper', Sequelize.col('timePeriod')), {
+                [Op.gt]: now,
+              }),
+            ],
+            classId: req.params.classId,
+          },
+        });
+      }
     }
 
     if (fields.includes('expired')) {
@@ -94,7 +117,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
         where: {
           [Op.and]: [
             Sequelize.where(Sequelize.fn('upper', Sequelize.col('timePeriod')), {
-              [Op.lt]: new Date(),
+              [Op.lt]: now,
             }),
           ],
           classId: req.params.classId,
