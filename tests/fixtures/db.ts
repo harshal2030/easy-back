@@ -1,13 +1,14 @@
 import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
+import XLSX from 'xlsx';
 import { nanoid } from 'nanoid';
 
 import { User, UserAttr } from '../../src/models/User';
 import { Class } from '../../src/models/Class';
 import { Announcement } from '../../src/models/Announcement';
 import { Device } from '../../src/models/Device';
-import { Question } from '../../src/models/Questions';
+import { Question, queSheet } from '../../src/models/Questions';
 import { Quiz } from '../../src/models/Quiz';
 import { Result } from '../../src/models/Result';
 import { Student } from '../../src/models/Student';
@@ -33,6 +34,19 @@ const user1Class = {
   about: 'no about',
   ownerRef: 'harshal223',
   joinCode: nanoid(12),
+};
+
+const class1Quiz1 = {
+  classId: user1Class.id,
+  questions: 5,
+  quizId: nanoid(),
+  title: 'testing quiz',
+  timePeriod: [
+    { value: Date.now() - 1 * 1000 * 60 * 60 * 24, inclusive: true },
+    { value: Date.now() + 1 * 1000 * 60 * 60 * 24, inclusive: true },
+  ],
+  randomOp: true,
+  randomQue: true,
 };
 
 const user1Class2 = {
@@ -88,6 +102,14 @@ const SeedDB = async () => {
       { username: user2.username, classId: user1Class.id },
       { username: user2.username, classId: user1Class2.id },
     ]);
+    await Quiz.create(class1Quiz1);
+
+    const workbook = XLSX.readFile(path.join(__dirname, '../../sample.xlsx'));
+    const sheets = workbook.SheetNames;
+    const queData = XLSX.utils.sheet_to_json<queSheet>(workbook.Sheets[sheets[0]]);
+    const data = Question.formatQueSheet(queData, class1Quiz1.quizId);
+
+    await Question.bulkCreate(data);
   } catch (e) {
     console.log(e);
   }
@@ -110,5 +132,5 @@ const truncate = async () => {
 };
 
 export {
-  user1, user2, user1Class, SeedDB, truncate, user1Class2, user3,
+  user1, user2, user1Class, SeedDB, truncate, user1Class2, user3, class1Quiz1,
 };
