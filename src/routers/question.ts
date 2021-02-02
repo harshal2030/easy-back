@@ -60,7 +60,7 @@ router.post('/:classId/:quizId', auth, mustBeClassOwner, mediaMiddleware, async 
 
     const que = await Question.create({ ...info, quizId: req.params.quizId });
 
-    return res.send(que);
+    return res.status(201).send(que);
   } catch (e) {
     return SendOnError(e, res);
   }
@@ -102,9 +102,10 @@ router.put('/:classId/:quizId/:queId', auth, mustBeClassOwner, mediaMiddleware, 
         quizId: req.params.quizId,
       },
       limit: 1,
+      returning: true,
     });
 
-    return res.send(que);
+    return res.send(que[1][0]);
   } catch (e) {
     return SendOnError(e, res);
   }
@@ -120,7 +121,7 @@ router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
     });
 
     if (!quizToUpdate) {
-      return res.send({ error: 'No such resource found' });
+      return res.status(400).send({ error: 'No such resource found' });
     }
 
     const ques = await Question.findAll({

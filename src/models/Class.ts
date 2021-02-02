@@ -88,6 +88,8 @@ Class.init({
       model: User,
       key: 'username',
     },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE',
   },
   photo: {
     type: DataTypes.STRING,

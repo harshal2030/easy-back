@@ -6,6 +6,8 @@ import BasicAuth from 'express-basic-auth';
 import { User } from '../models/User';
 import { Device } from '../models/Device';
 import { Student } from '../models/Student';
+import { Result } from '../models/Result';
+import { Announcement } from '../models/Announcement';
 import sequelize from '../db';
 
 import { auth } from '../middlewares/auth';
@@ -13,8 +15,6 @@ import { auth } from '../middlewares/auth';
 import { SendOnError } from '../utils/functions';
 import { avatarPath } from '../utils/paths';
 import { FileStorage } from '../services/FileStorage';
-import { Result } from '../models/Result';
-import { Announcement } from '../models/Announcement';
 
 const router = express.Router();
 

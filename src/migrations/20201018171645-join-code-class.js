@@ -5,6 +5,7 @@ module.exports = {
         allowNull: false,
       });
     } catch (e) {
+      console.log(e);
       // move
     }
   }, /**
