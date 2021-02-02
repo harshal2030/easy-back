@@ -76,6 +76,28 @@ const user2: UserAttr = {
   tokens: [jwt.sign({ username: 'john' }, privateKey, { algorithm: 'RS256' })],
 };
 
+const user2Class4 = {
+  id: nanoid(),
+  name: 'hello',
+  subject: 'phy',
+  about: 'no about',
+  ownerRef: 'john',
+  joinCode: nanoid(12),
+};
+
+const class4Quiz1 = {
+  classId: user2Class4.id,
+  questions: 4,
+  quizId: nanoid(),
+  title: 'testing quiz 2',
+  timePeriod: [
+    { value: Date.now() - 1 * 1000 * 60 * 60 * 24, inclusive: true },
+    { value: Date.now() + 1 * 1000 * 60 * 60 * 24, inclusive: true },
+  ],
+  randomOp: true,
+  randomQue: true,
+};
+
 const user3: UserAttr = {
   id: 3,
   name: 'john3',
@@ -97,12 +119,12 @@ const SeedDB = async () => {
   try {
     await User.bulkCreate([user1, user2, user3]);
     await Device.bulkCreate([user1Device, user2Device]);
-    await Class.bulkCreate([user1Class, user1Class2]);
+    await Class.bulkCreate([user1Class, user1Class2, user2Class4]);
     await Student.bulkCreate([
       { username: user2.username, classId: user1Class.id },
       { username: user2.username, classId: user1Class2.id },
     ]);
-    await Quiz.create(class1Quiz1);
+    await Quiz.bulkCreate([class1Quiz1, class4Quiz1]);
 
     const workbook = XLSX.readFile(path.join(__dirname, '../../sample.xlsx'));
     const sheets = workbook.SheetNames;
@@ -132,5 +154,14 @@ const truncate = async () => {
 };
 
 export {
-  user1, user2, user1Class, SeedDB, truncate, user1Class2, user3, class1Quiz1,
+  user1,
+  user2,
+  user1Class,
+  SeedDB,
+  truncate,
+  user1Class2,
+  user3,
+  class1Quiz1,
+  class4Quiz1,
+  user2Class4,
 };
