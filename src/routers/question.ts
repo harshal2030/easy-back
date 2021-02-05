@@ -113,6 +113,8 @@ router.put('/:classId/:quizId/:queId', auth, mustBeClassOwner, mediaMiddleware, 
 
 router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
   try {
+    const offset = typeof req.query.page === 'string' ? parseInt(req.query.page, 10) * 10 : 0;
+
     const quizToUpdate = await Quiz.findOne({
       where: {
         quizId: req.params.quizId,
@@ -129,6 +131,8 @@ router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
         quizId: req.params.quizId,
       },
       attributes: ['question', 'options', 'queId', 'attachments', 'score'],
+      offset,
+      limit: 10,
     });
 
     return res.send(ques);
