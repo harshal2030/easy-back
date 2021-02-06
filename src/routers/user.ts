@@ -148,6 +148,22 @@ router.post('/logout', auth, async (req, res) => {
   }
 });
 
+router.post('/recover', accountAuth, async (req, res) => {
+  try {
+    const user = await User.findAll({
+      where: {
+        email: req.body.email,
+      },
+    });
+
+    if (!user) {
+      res.send({ error: 'No such user' });
+    }
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
 const upload = multer({
   limits: {
     fileSize: 5 * 1000000,
