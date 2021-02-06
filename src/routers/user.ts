@@ -136,6 +136,8 @@ router.post('/logout', auth, async (req, res) => {
       transaction: t,
     });
 
+    console.log(deletedDevices);
+
     if (!deletedDevices) {
       console.log('error at device');
       throw new Error();
