@@ -143,6 +143,7 @@ router.post('/logout', auth, async (req, res) => {
 
     res.send();
   } catch (e) {
+    console.log(e);
     await t.rollback();
     SendOnError(e, res);
   }
