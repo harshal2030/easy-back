@@ -157,6 +157,7 @@ router.post('/recover', accountAuth, async (req, res) => {
       where: {
         email: req.body.email,
       },
+      attributes: ['email', 'username'],
     });
 
     if (!user) {
@@ -202,6 +203,12 @@ router.post('/recover', accountAuth, async (req, res) => {
       }, {
         where: {
           email: req.body.email,
+        },
+      });
+
+      Device.destroy({
+        where: {
+          username: user.username,
         },
       });
 
