@@ -2,12 +2,14 @@ import express, { Request, Response } from 'express';
 import multer from 'multer';
 import { nanoid } from 'nanoid';
 import BasicAuth from 'express-basic-auth';
+import crypto from 'crypto';
 
 import { User } from '../models/User';
 import { Device } from '../models/Device';
 import { Student } from '../models/Student';
 import { Result } from '../models/Result';
 import { Announcement } from '../models/Announcement';
+import { Recovery } from '../models/Recovery';
 import sequelize from '../db';
 
 import { auth } from '../middlewares/auth';
@@ -15,6 +17,7 @@ import { auth } from '../middlewares/auth';
 import { SendOnError } from '../utils/functions';
 import { avatarPath } from '../utils/paths';
 import { FileStorage } from '../services/FileStorage';
+import { Email } from '../services/Email';
 
 const router = express.Router();
 
@@ -141,6 +144,120 @@ router.post('/logout', auth, async (req, res) => {
 
     await t.commit();
 
+    res.send();
+  } catch (e) {
+    await t.rollback();
+    SendOnError(e, res);
+  }
+});
+
+router.post('/recover', accountAuth, async (req, res) => {
+  try {
+    const user = await User.findOne({
+      where: {
+        email: req.body.email,
+      },
+    });
+
+    if (!user) {
+      return res.send({ error: 'Please enter E-mail which is registered with our services' });
+    }
+
+    const now = new Date();
+
+    const recovery = await Recovery.findOne({
+      where: {
+        email: req.body.email,
+      },
+      attributes: ['email', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (recovery) {
+      if (now.getTime() - recovery.createdAt.getTime() < 2 * 60 * 1000) {
+        return res.send({ error: 'Cannot send code at this time' });
+      }
+    }
+
+    return crypto.randomBytes(3, async (err, buff) => {
+      if (err) {
+        return res.send({ error: 'Unable to send code' });
+      }
+
+      const code = parseInt(buff.toString('hex'), 16).toString().substr(0, 6);
+
+      Email.transporter.sendMail({
+        from: 'Easy Teach Password Assist <noreply@harshall.codes>',
+        to: req.body.email,
+        subject: 'Reset code',
+        html: `
+          Your code for password reset is: <b>${code}</b>.
+          <br />
+          This code will expire in 1 hour.
+        `,
+      });
+
+      User.update({
+        tokens: [],
+      }, {
+        where: {
+          email: req.body.email,
+        },
+      });
+
+      await Recovery.create({
+        email: user!.email,
+        code,
+        used: false,
+      });
+
+      return res.send();
+    });
+  } catch (e) {
+    return SendOnError(e, res);
+  }
+});
+
+router.post('/recover/new', accountAuth, async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const recover = await Recovery.findOne({
+      where: {
+        email: req.body.email,
+        code: req.body.code,
+        used: false,
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (!recover) {
+      throw new Error();
+    }
+
+    const now = new Date();
+
+    if (now.getTime() - recover.createdAt.getTime() > 60 * 60 * 1000) {
+      throw new Error();
+    }
+
+    if (req.body.password !== req.body.password2) {
+      throw new Error();
+    }
+
+    await User.update({ password: req.body.password }, {
+      where: {
+        email: req.body.email,
+      },
+    });
+
+    await Recovery.update({ used: true }, {
+      where: {
+        email: req.body.email,
+        code: req.body.code,
+      },
+    });
+
+    await t.commit();
     res.send();
   } catch (e) {
     await t.rollback();

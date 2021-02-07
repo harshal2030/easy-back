@@ -1,6 +1,5 @@
 import express from 'express';
 import multer from 'multer';
-import sharp from 'sharp';
 import { nanoid } from 'nanoid';
 
 import { Question } from '../models/Questions';
@@ -12,6 +11,7 @@ import { mustBeClassOwner } from '../middlewares/userLevels';
 import { SendOnError } from '../utils/functions';
 import { staticImageExtPattern } from '../utils/regexPatterns';
 import { classImagePath } from '../utils/paths';
+import { FileStorage } from '../services/FileStorage';
 
 const router = express.Router();
 
@@ -53,8 +53,7 @@ router.post('/:classId/:quizId', auth, mustBeClassOwner, mediaMiddleware, async 
 
     if (files.media !== undefined) {
       const filename = `${nanoid()}.png`;
-      const filePath = `${classImagePath}/${filename}`;
-      await sharp(files.media[0].buffer).png().toFile(filePath);
+      await FileStorage.saveImageFromBuffer(files.media[0].buffer, filename, classImagePath);
       info.attachments = filename;
     }
 
@@ -88,9 +87,19 @@ router.put('/:classId/:quizId/:queId', auth, mustBeClassOwner, mediaMiddleware, 
 
     if (files.media !== undefined) {
       const filename = `${nanoid()}.png`;
-      const filePath = `${classImagePath}/${filename}`;
-      await sharp(files.media[0].buffer).png().toFile(filePath);
+      await FileStorage.saveImageFromBuffer(files.media[0].buffer, filename, classImagePath);
       info.attachments = filename;
+
+      const question = await Question.findOne({
+        where: {
+          queId: req.params.queId,
+          quizId: req.params.quizId,
+        },
+      });
+
+      if (question!.attachments) {
+        FileStorage.deleteFile(question!.attachments, classImagePath);
+      }
     }
 
     const que = await Question.update({
@@ -113,6 +122,8 @@ router.put('/:classId/:quizId/:queId', auth, mustBeClassOwner, mediaMiddleware, 
 
 router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
   try {
+    const offset = typeof req.query.page === 'string' ? parseInt(req.query.page, 10) * 10 : 0;
+
     const quizToUpdate = await Quiz.findOne({
       where: {
         quizId: req.params.quizId,
@@ -129,6 +140,8 @@ router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
         quizId: req.params.quizId,
       },
       attributes: ['question', 'options', 'queId', 'attachments', 'score'],
+      offset,
+      limit: 10,
     });
 
     return res.send(ques);
