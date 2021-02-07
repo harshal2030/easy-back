@@ -17,7 +17,7 @@ class Recovery extends Model implements RecoveryAttr {
 
   public used!: boolean;
 
-  public readonly createAt!: Date;
+  public readonly createdAt!: Date;
 }
 
 Recovery.init({
@@ -41,7 +41,7 @@ Recovery.init({
     allowNull: false,
     validate: {
       checkCode(value: string) {
-        if (value.trim().length < 6) {
+        if (value.trim().length < 4) {
           throw new Error('Code too short');
         }
       },
