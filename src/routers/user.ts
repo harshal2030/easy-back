@@ -229,7 +229,6 @@ router.post('/recover/new', accountAuth, async (req, res) => {
       },
       order: [['createdAt', 'DESC']],
     });
-    console.log(req.body, recover);
 
     if (!recover) {
       throw new Error();
@@ -261,7 +260,6 @@ router.post('/recover/new', accountAuth, async (req, res) => {
     await t.commit();
     res.send();
   } catch (e) {
-    console.log(e);
     await t.rollback();
     SendOnError(e, res);
   }
