@@ -85,17 +85,21 @@ router.put('/:classId/:quizId/:queId', auth, mustBeClassOwner, mediaMiddleware, 
     }
     const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
 
+    const question = await Question.findOne({
+      where: {
+        queId: req.params.queId,
+        quizId: req.params.quizId,
+      },
+    });
+
+    if (!question) {
+      return res.status(404).send({ error: 'Unable to find question' });
+    }
+
     if (files.media !== undefined) {
       const filename = `${nanoid()}.png`;
       await FileStorage.saveImageFromBuffer(files.media[0].buffer, filename, classImagePath);
       info.attachments = filename;
-
-      const question = await Question.findOne({
-        where: {
-          queId: req.params.queId,
-          quizId: req.params.quizId,
-        },
-      });
 
       if (question!.attachments) {
         FileStorage.deleteFile(question!.attachments, classImagePath);
@@ -103,8 +107,11 @@ router.put('/:classId/:quizId/:queId', auth, mustBeClassOwner, mediaMiddleware, 
     }
 
     const que = await Question.update({
-      ...info,
-      quizId: req.params.quizId,
+      question: info.question,
+      options: info.options,
+      attachments: info.attachments,
+      score: question!.score,
+      correct: question.correct,
     }, {
       where: {
         queId: req.params.queId,
@@ -142,6 +149,7 @@ router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
       attributes: ['question', 'options', 'queId', 'attachments', 'score'],
       offset,
       limit: 10,
+      order: [['question', 'ASC']],
     });
 
     return res.send(ques);

@@ -108,6 +108,8 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
             ],
             classId: req.params.classId,
           },
+          order: [['createdAt', 'DESC']],
+          attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
         });
       }
     }
