@@ -307,7 +307,6 @@ router.put('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
       },
       returning: true,
     });
-
     return res.send(updatedQuiz[1][0]);
   } catch (e) {
     return SendOnError(e, res);

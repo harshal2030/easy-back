@@ -125,6 +125,7 @@ router.post('/logout', auth, async (req, res) => {
         username: req.user!.username,
       },
       transaction: t,
+
     });
 
     if (!updated) {
@@ -300,7 +301,6 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
   }
 
   const t = await sequelize.transaction();
-
   try {
     const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
     let fileName = '';

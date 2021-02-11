@@ -3,4 +3,12 @@
         "JSONB",
         "middlewares"
     ]
+  "cSpell.words": [
+    "JSONB",
+    "adminsdk",
+    "fieldname",
+    "originalname",
+    "recordset"
+  ],
+  "typescript.tsdk": "node_modules\\typescript\\lib",
 }

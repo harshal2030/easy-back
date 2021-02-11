@@ -52,6 +52,9 @@ Class.init({
     unique: true,
     allowNull: false,
     defaultValue: () => nanoid(),
+    set() {
+      this.setDataValue('id', nanoid());
+    },
   },
   name: {
     type: DataTypes.STRING,

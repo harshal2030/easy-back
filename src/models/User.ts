@@ -155,6 +155,9 @@ User.init({
         }
       },
     },
+    set(value: string) {
+      this.setDataValue('password', generateHash(value));
+    },
   },
   tokens: {
     type: DataTypes.ARRAY(DataTypes.STRING(500)),
@@ -163,12 +166,6 @@ User.init({
 }, {
   sequelize,
   timestamps: true,
-  hooks: {
-    afterValidate: (user) => {
-      // eslint-disable-next-line no-param-reassign
-      user.password = generateHash(user.password);
-    },
-  },
 });
 
 const fn = async () => {

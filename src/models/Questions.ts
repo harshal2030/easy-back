@@ -81,6 +81,9 @@ Question.init({
     allowNull: false,
     primaryKey: true,
     defaultValue: () => nanoid(),
+    set() {
+      this.setDataValue('queId', nanoid());
+    },
   },
   question: {
     type: DataTypes.TEXT,

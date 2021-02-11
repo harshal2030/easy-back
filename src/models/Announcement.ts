@@ -33,6 +33,9 @@ Announcement.init({
     primaryKey: true,
     unique: true,
     defaultValue: () => nanoid(25),
+    set() {
+      this.setDataValue('id', nanoid(25));
+    },
   },
   author: {
     type: DataTypes.STRING,
