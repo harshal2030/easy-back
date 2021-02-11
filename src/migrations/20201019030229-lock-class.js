@@ -5,6 +5,7 @@ module.exports = {
         defaultValue: false,
       });
     } catch (e) {
+      console.log(e);
       // move on
     }
   }, /**

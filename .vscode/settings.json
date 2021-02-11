@@ -1,4 +1,8 @@
 {
+    "cSpell.words": [
+        "JSONB",
+        "middlewares"
+    ]
   "cSpell.words": [
     "JSONB",
     "adminsdk",
@@ -7,5 +11,4 @@
     "recordset"
   ],
   "typescript.tsdk": "node_modules\\typescript\\lib",
-  "python.pythonPath": "C:\\Users\\harshal\\miniconda3\\envs\\resttest\\python.exe"
 }

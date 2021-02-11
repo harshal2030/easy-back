@@ -125,6 +125,7 @@ User.init({
       },
     },
     onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
   },
   email: {
     type: DataTypes.STRING,

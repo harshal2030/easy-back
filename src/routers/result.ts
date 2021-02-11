@@ -16,6 +16,7 @@ router.get('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => 
       where: {
         quizId: req.params.quizId,
         classId: req.params.classId,
+        releaseScore: true,
       },
     });
 
@@ -58,6 +59,7 @@ router.get('/file/:classId/:quizId', async (req, res) => {
       incorrect: number;
       totalQues: number;
       responder: string;
+      notAnswered: number;
     }[] = [];
 
     const responders = Object.keys(results);

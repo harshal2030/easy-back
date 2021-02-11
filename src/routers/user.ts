@@ -1,9 +1,15 @@
 import express, { Request, Response } from 'express';
 import multer from 'multer';
 import { nanoid } from 'nanoid';
+import BasicAuth from 'express-basic-auth';
+import crypto from 'crypto';
 
 import { User } from '../models/User';
 import { Device } from '../models/Device';
+import { Student } from '../models/Student';
+import { Result } from '../models/Result';
+import { Announcement } from '../models/Announcement';
+import { Recovery } from '../models/Recovery';
 import sequelize from '../db';
 
 import { auth } from '../middlewares/auth';
@@ -11,6 +17,7 @@ import { auth } from '../middlewares/auth';
 import { SendOnError } from '../utils/functions';
 import { avatarPath } from '../utils/paths';
 import { FileStorage } from '../services/FileStorage';
+import { Email } from '../services/Email';
 
 const router = express.Router();
 
@@ -42,7 +49,13 @@ interface LoginReq extends Request {
   }
 }
 
-router.post('/create', async (req: SignUpReq, res: Response) => {
+const accountAuth = BasicAuth({
+  users: {
+    accountCreator: process.env.accPass!,
+  },
+});
+
+router.post('/create', accountAuth, async (req: SignUpReq, res: Response) => {
   const queries = Object.keys(req.body.user);
   const allowedQueries = ['name', 'username', 'email', 'password'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
@@ -68,7 +81,7 @@ router.post('/create', async (req: SignUpReq, res: Response) => {
   }
 });
 
-router.post('/login', async (req: LoginReq, res: Response) => {
+router.post('/login', accountAuth, async (req: LoginReq, res: Response) => {
   try {
     const user = await User.checkUsernameAndPass(req.body.user.username, req.body.user.password);
     const token = await user.generateJwt();
@@ -89,7 +102,12 @@ router.post('/login', async (req: LoginReq, res: Response) => {
 
 router.get('/token', auth, async (req, res) => {
   try {
-    res.send(req.user!);
+    // message have possible values: 'CONTINUE' | 'UPDATE_REQUIRED' | 'SERVER_MAINTENANCE'
+    // this message are meant to be used in the front-end to force user for specific actions
+    // CONTINUE: Let the user move forward to app
+    // UPDATE_REQUIRED: force user to update app
+    // SERVER_MAINTENANCE: don't let user access service.
+    res.send({ user: req.user!, message: 'CONTINUE' });
   } catch (e) {
     SendOnError(e, res);
   }
@@ -107,6 +125,7 @@ router.post('/logout', auth, async (req, res) => {
         username: req.user!.username,
       },
       transaction: t,
+
     });
 
     if (!updated) {
@@ -133,9 +152,130 @@ router.post('/logout', auth, async (req, res) => {
   }
 });
 
+router.post('/recover', accountAuth, async (req, res) => {
+  try {
+    const user = await User.findOne({
+      where: {
+        email: req.body.email,
+      },
+      attributes: ['email', 'username'],
+    });
+
+    if (!user) {
+      return res.send({ error: 'Please enter E-mail which is registered with our services' });
+    }
+
+    const now = new Date();
+
+    const recovery = await Recovery.findOne({
+      where: {
+        email: req.body.email,
+      },
+      attributes: ['email', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (recovery) {
+      if (now.getTime() - recovery.createdAt.getTime() < 2 * 60 * 1000) {
+        return res.send({ error: 'Cannot send code at this time' });
+      }
+    }
+
+    return crypto.randomBytes(3, async (err, buff) => {
+      if (err) {
+        return res.send({ error: 'Unable to send code' });
+      }
+
+      const code = parseInt(buff.toString('hex'), 16).toString().substr(0, 6);
+
+      Email.transporter.sendMail({
+        from: 'Easy Teach Password Assist <noreply@harshall.codes>',
+        to: req.body.email,
+        subject: 'Reset code',
+        html: `
+          Your code for password reset is: <b>${code}</b>.
+          <br />
+          This code will expire in 1 hour.
+        `,
+      });
+
+      User.update({
+        tokens: [],
+      }, {
+        where: {
+          email: req.body.email,
+        },
+      });
+
+      Device.destroy({
+        where: {
+          username: user.username,
+        },
+      });
+
+      await Recovery.create({
+        email: user!.email,
+        code,
+        used: false,
+      });
+
+      return res.send();
+    });
+  } catch (e) {
+    return SendOnError(e, res);
+  }
+});
+
+router.post('/recover/new', accountAuth, async (req, res) => {
+  const t = await sequelize.transaction();
+  try {
+    const recover = await Recovery.findOne({
+      where: {
+        email: req.body.email,
+        code: req.body.code,
+        used: false,
+      },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (!recover) {
+      throw new Error();
+    }
+
+    const now = new Date();
+
+    if (now.getTime() - recover.createdAt.getTime() > 60 * 60 * 1000) {
+      throw new Error();
+    }
+
+    if (req.body.password !== req.body.password2) {
+      throw new Error();
+    }
+
+    await User.update({ password: req.body.password }, {
+      where: {
+        email: req.body.email,
+      },
+    });
+
+    await Recovery.update({ used: true }, {
+      where: {
+        email: req.body.email,
+        code: req.body.code,
+      },
+    });
+
+    await t.commit();
+    res.send();
+  } catch (e) {
+    await t.rollback();
+    SendOnError(e, res);
+  }
+});
+
 const upload = multer({
   limits: {
-    fileSize: 5 * 1000000, // 5 mb
+    fileSize: 5 * 1000000,
   },
   fileFilter(_req, file, cb) {
     if (!file.originalname.match(/\.(png|jpeg|jpg)$/i)) {
@@ -160,11 +300,12 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
     return res.status(400).send({ error: 'Invalid params.' });
   }
 
+  const t = await sequelize.transaction();
   try {
     const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
     let fileName = '';
 
-    if (files.avatar !== undefined) { // save and delete file if exists
+    if (files.avatar !== undefined) {
       const { buffer } = files.avatar[0];
 
       fileName = `${nanoid()}.png`;
@@ -182,7 +323,45 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
       const newTokens = User.generateJWTAndUpdateArray(data.username, token!, req.user!.tokens);
 
       token = newTokens.token;
-      data.tokens = newTokens.tokens; // add tokens array to data to update db
+      data.tokens = newTokens.tokens;
+
+      const studentUpdate = Student.update({
+        username: data.username,
+      }, {
+        where: {
+          username: req.user!.username,
+        },
+        transaction: t,
+      });
+
+      const resultUpdate = Result.update({
+        responder: data.username,
+      }, {
+        where: {
+          responder: req.user!.username,
+        },
+        transaction: t,
+      });
+
+      const deviceUpdate = Device.update({
+        username: data.username,
+      }, {
+        where: {
+          username: req.user!.username,
+        },
+        transaction: t,
+      });
+
+      const announceUpdate = Announcement.update({
+        author: data.username,
+      }, {
+        where: {
+          author: req.user!.username,
+        },
+        transaction: t,
+      });
+
+      await Promise.all([studentUpdate, resultUpdate, deviceUpdate, announceUpdate]);
     }
 
     const userToUpdate = await User.update(data, {
@@ -190,10 +369,14 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
         username: req.user!.username,
       },
       returning: true,
+      transaction: t,
     });
+
+    await t.commit();
 
     return res.send({ user: userToUpdate[1][0], token });
   } catch (e) {
+    await t.rollback();
     return SendOnError(e, res);
   }
 });

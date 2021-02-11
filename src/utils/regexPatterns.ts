@@ -1,6 +1,8 @@
 const usernamePattern = /^[A-Za-z]+[A-Za-z0-9_.]+$/;
 const handlePattern = /\B(@[a-zA-Z0-9_.]+\b)(?!;)/gm;
 
+const staticImageExtPattern = /\.(jpeg|jpeg|png)$/i;
+
 const imageExtPattern = /\.(png|jpg|jpeg|gif)$/i;
 const videoExtPattern = /\.(mp4|mkv|mov|wmv)/i;
 const pdfExtPattern = /\.(pdf)$/i;
@@ -17,4 +19,5 @@ export {
   excelExtPattern,
   pptExtPattern,
   videoExtPattern,
+  staticImageExtPattern,
 };

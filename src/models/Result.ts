@@ -22,6 +22,7 @@ class Result extends Model implements ResultAttr {
     let userScored = 0;
     let correct = 0;
     let incorrect = 0;
+    let notAnswered = 0;
 
     queInfo.forEach((que) => {
       totalScore += que.score;
@@ -29,6 +30,8 @@ class Result extends Model implements ResultAttr {
       if (que.response === que.correct) {
         userScored += que.score;
         correct += 1;
+      } else if (que.response === null || undefined) {
+        notAnswered += 1;
       } else {
         incorrect += 1;
       }
@@ -39,6 +42,7 @@ class Result extends Model implements ResultAttr {
       userScored,
       correct,
       incorrect,
+      notAnswered,
       totalQues: queInfo.length,
     };
   }

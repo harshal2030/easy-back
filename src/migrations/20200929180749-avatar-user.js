@@ -7,6 +7,7 @@ module.exports = {
       });
     } catch (e) {
       // continue
+      console.log(e);
     }
   }, /**
      * Add altering commands here.

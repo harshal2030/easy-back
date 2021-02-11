@@ -1,7 +1,11 @@
 import express, { Application } from 'express';
 import http from 'http';
+import path from 'path';
 import compression from 'compression';
 import helmet from 'helmet';
+import morgan from 'morgan';
+=======
+import compression from 'compression';
 
 // routers
 import userRouter from './routers/user';
@@ -23,6 +27,10 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+}
+
 app.use('/users', userRouter);
 app.use('/class', classRouter);
 app.use('/media', mediaRouter);
@@ -36,6 +44,10 @@ app.use('/file', fileUploadRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello');
+});
+
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, '../privacy.html'));
 });
 
 export default server;

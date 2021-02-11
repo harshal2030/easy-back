@@ -87,12 +87,28 @@ Question.init({
   },
   question: {
     type: DataTypes.TEXT,
+    allowNull: false,
+    validate: {
+      checkQuestion(value: string | null) {
+        if (!value) {
+          throw new Error('Empty questions are not allowed');
+        }
+
+        if (value.trim().length === 0) {
+          throw new Error('Empty questions are not allowed');
+        }
+      },
+    },
   },
   attachments: {
     type: DataTypes.STRING,
   },
   options: {
     type: DataTypes.ARRAY(DataTypes.TEXT),
+    set(val: any[]) {
+      const values = val.map((v) => v.toString()).filter((v: string) => v.trim().length !== 0);
+      this.setDataValue('options', values);
+    },
     validate: {
       checkLength(value: string[]) {
         if (value.length <= 0) {
@@ -104,6 +120,9 @@ Question.init({
   correct: {
     type: DataTypes.TEXT,
     allowNull: false,
+    set(val: any) {
+      this.setDataValue('correct', val.toString());
+    },
   },
   score: {
     type: DataTypes.INTEGER,

@@ -7,6 +7,7 @@ module.exports = {
         defaultValue: 1,
       });
     } catch (e) {
+      console.log(e);
       // move on
     }
   },

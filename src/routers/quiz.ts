@@ -11,87 +11,9 @@ import { Result } from '../models/Result';
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { SendOnError, shuffleArray } from '../utils/functions';
+import { Class } from '../models/Class';
 
 const router = express.Router();
-
-router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
-  try {
-    const requested = req.query.return as unknown as string | undefined;
-    const fields = requested ? requested.split(',') : ['live', 'expired'];
-
-    const response: {
-      [fields: string]: Quiz[]
-    } = { live: [], expired: [], scored: [] };
-
-    if (fields.includes('live')) {
-      response.live = await Quiz.findAll({
-        where: {
-          timePeriod: {
-            [Op.contains]: new Date(),
-          },
-          classId: req.params.classId,
-        },
-        order: [['createdAt', 'DESC']],
-      });
-    }
-
-    if (fields.includes('expired')) {
-      response.expired = await Quiz.findAll({
-        where: {
-          [Op.and]: [
-            Sequelize.where(Sequelize.fn('upper', Sequelize.col('timePeriod')), {
-              [Op.lt]: new Date(),
-            }),
-          ],
-          classId: req.params.classId,
-        },
-        order: [['createdAt', 'DESC']],
-      });
-    }
-
-    if (fields.includes('scored')) {
-      response.scored = await Quiz.findAll({
-        where: {
-          releaseScore: true,
-          classId: req.params.classId,
-          '$result.responder$': req.user!.username,
-        },
-        order: [['createdAt', 'DESC']],
-        include: [
-          {
-            model: Result,
-            as: 'result',
-            attributes: [],
-            required: true,
-          },
-        ],
-      });
-    }
-
-    res.send(response);
-  } catch (e) {
-    SendOnError(e, res);
-  }
-});
-
-router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
-  try {
-    const quiz = await Quiz.findOne({
-      where: {
-        classId: req.params.classId,
-        quizId: req.params.quizId,
-      },
-    });
-
-    if (!quiz) {
-      throw new Error();
-    }
-
-    res.send(quiz);
-  } catch (e) {
-    SendOnError(e, res);
-  }
-});
 
 const upload = multer({
   limits: {
@@ -143,6 +65,111 @@ router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, re
     return res.status(201).send(quiz);
   } catch (e) {
     return SendOnError(e, res);
+  }
+});
+
+router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    const requested = req.query.return as unknown as string | undefined;
+    const fields = requested ? requested.split(',') : ['live', 'expired'];
+    const now = new Date();
+
+    const classRequested = await Class.findOne({
+      where: {
+        ownerRef: req.user!.username,
+        id: req.params.classId,
+      },
+      attributes: ['ownerRef', 'id'],
+    });
+
+    const response: {
+      [fields: string]: Quiz[]
+    } = { live: [], expired: [], scored: [] };
+
+    if (fields.includes('live')) {
+      if (!classRequested) {
+        response.live = await Quiz.findAll({
+          where: {
+            timePeriod: {
+              [Op.contains]: now,
+            },
+            classId: req.params.classId,
+          },
+          order: [['createdAt', 'DESC']],
+          attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
+        });
+      } else {
+        response.live = await Quiz.findAll({
+          where: {
+            [Op.and]: [
+              Sequelize.where(Sequelize.fn('upper', Sequelize.col('timePeriod')), {
+                [Op.gt]: now,
+              }),
+            ],
+            classId: req.params.classId,
+          },
+          order: [['createdAt', 'DESC']],
+          attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
+        });
+      }
+    }
+
+    if (fields.includes('expired')) {
+      response.expired = await Quiz.findAll({
+        where: {
+          [Op.and]: [
+            Sequelize.where(Sequelize.fn('upper', Sequelize.col('timePeriod')), {
+              [Op.lt]: now,
+            }),
+          ],
+          classId: req.params.classId,
+        },
+        order: [['createdAt', 'DESC']],
+        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
+      });
+    }
+
+    if (fields.includes('scored')) {
+      response.scored = await Quiz.findAll({
+        where: {
+          releaseScore: true,
+          classId: req.params.classId,
+          '$result.responder$': req.user!.username,
+        },
+        order: [['createdAt', 'DESC']],
+        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
+        include: [
+          {
+            model: Result,
+            as: 'result',
+            required: true,
+          },
+        ],
+      });
+    }
+
+    res.send(response);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
+router.get('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
+  try {
+    const quiz = await Quiz.findOne({
+      where: {
+        classId: req.params.classId,
+        quizId: req.params.quizId,
+      },
+    });
+
+    if (!quiz) {
+      throw new Error();
+    }
+
+    res.send(quiz);
+  } catch (e) {
+    SendOnError(e, res);
   }
 });
 
@@ -225,6 +252,12 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
       return res.status(404).send({ error: 'No such quiz found' });
     }
 
+    const now = new Date().getTime();
+
+    if (quiz.timePeriod[0].value.getTime() > now || quiz.timePeriod[1].value.getTime() < now) {
+      return res.status(400).send({ error: 'No longer accepting response' });
+    }
+
     if (!quiz.multipleSubmit) {
       const hasSubmitted = await Result.findOne({
         where: {
@@ -274,7 +307,6 @@ router.put('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
       },
       returning: true,
     });
-
     return res.send(updatedQuiz[1][0]);
   } catch (e) {
     return SendOnError(e, res);

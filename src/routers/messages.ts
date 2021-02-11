@@ -3,7 +3,7 @@ import express from 'express';
 import { Announcement } from '../models/Announcement';
 import { User } from '../models/User';
 
-import { Notification } from '../services';
+import { Notification } from '../services/Notification';
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { SendOnError } from '../utils/functions';

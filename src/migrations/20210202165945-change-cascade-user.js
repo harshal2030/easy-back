@@ -1,36 +1,44 @@
 module.exports = {
+
   up: async (queryInterface, Sequelize) => {
     try {
-      await queryInterface.changeColumn('Devices', 'token', {
-        type: Sequelize.STRING(500),
+      await queryInterface.changeColumn('Users', 'username', {
+        type: Sequelize.STRING(),
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE',
         allowNull: false,
       });
     } catch (e) {
       console.log(e);
-      // move on
     }
+
     /**
+
      * Add altering commands here.
+
      *
+
      * Example:
+
      * await queryInterface.createTable('users', { id: Sequelize.INTEGER });
+
      */
   },
 
   down: async (queryInterface, Sequelize) => {
-    try {
-      await queryInterface.changeColumn('Devices', 'token', {
-        type: Sequelize.STRING(500),
-        allowNull: false,
-      });
-    } catch (e) {
-      // move on
-    }
+    console.log('no down query');
+
     /**
+
      * Add reverting commands here.
+
      *
+
      * Example:
+
      * await queryInterface.dropTable('users');
+
      */
   },
+
 };

@@ -3,6 +3,7 @@ module.exports = {
     try {
       await queryInterface.renameColumn('Classes', 'owner', 'ownerRef');
     } catch (e) {
+      console.log(e);
       // move on
     }
   }, /**

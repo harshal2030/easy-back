@@ -3,7 +3,7 @@ module.exports = {
     try {
       await queryInterface.addColumn('Classes', 'subject', Sequelize.STRING);
     } catch (e) {
-
+      console.log(e);
       // move on
     }
   }, /**
