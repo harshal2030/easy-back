@@ -49,6 +49,7 @@ class Question extends Model implements QuestionAttr {
         options: [],
       };
 
+      // @ts-ignore
       delete data.correct;
       // @ts-ignore
       delete data.score;
