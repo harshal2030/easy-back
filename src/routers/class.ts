@@ -182,7 +182,7 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
       await FileStorage.saveImageFromBuffer(buffer, fileName, classImagePath);
       data.photo = fileName;
 
-      if (!req.ownerClass!.photo) {
+      if (req.ownerClass!.photo) {
         FileStorage.deleteFile(req.ownerClass!.photo, classImagePath);
       }
     }
