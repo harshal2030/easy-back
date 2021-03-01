@@ -36,11 +36,11 @@ app.use('/student', studentRouter);
 app.use('/result', resultRouter);
 app.use('/msg', messageRouter);
 
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.send('Hello');
 });
 
-app.get('/privacy', (req, res) => {
+app.get('/privacy', (_req, res) => {
   res.sendFile(path.join(__dirname, '../privacy.html'));
 });
 
