@@ -152,6 +152,17 @@ router.post('/join', auth, async (req, res) => {
       return res.status(404).send({ error: 'No such class found' });
     }
 
+    const alreadyJoined = await Student.findOne({
+      where: {
+        username: req.user!.username,
+        classId: classToJoin.id,
+      },
+    });
+
+    if (alreadyJoined) {
+      return res.status(400).send();
+    }
+
     await Student.create({
       classId: classToJoin.id,
       username: req.user!.username,
