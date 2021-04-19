@@ -11,7 +11,7 @@ import { auth } from '../middlewares/auth';
 import { mustBeClassOwner } from '../middlewares/userLevels';
 
 import { SendOnError } from '../utils/functions';
-import { legalExtPatterns } from '../utils/regexPatterns';
+import { videoExtPattern } from '../utils/regexPatterns';
 
 const router = express.Router();
 
@@ -41,7 +41,7 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
     const data: {[fieldName: string]: string} = {};
 
     busboy.on('file', (_fieldname, file, filename) => {
-      if (filename.match(legalExtPatterns)) {
+      if (filename.match(videoExtPattern)) {
         const filenameToSave = `${nanoid()}${path.extname(filename)}`;
         const saveTo = path.join(__dirname, `../../../media/class/modules/${filenameToSave}`);
         const stream = fs.createWriteStream(saveTo);
