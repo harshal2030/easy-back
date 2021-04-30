@@ -4,6 +4,7 @@ import path from 'path';
 import compression from 'compression';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cors from 'cors';
 
 // routers
 import userRouter from './routers/user';
@@ -20,6 +21,7 @@ const server = http.createServer(app);
 
 app.use(compression());
 app.use(helmet());
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
