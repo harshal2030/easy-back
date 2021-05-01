@@ -21,7 +21,7 @@ const server = http.createServer(app);
 
 app.use(compression());
 app.use(helmet());
-app.use(cors());
+app.use(cors({ origin: ['https://easyteach.onrender.com'] }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
