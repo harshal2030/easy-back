@@ -46,6 +46,9 @@ File.init({
     type: DataTypes.STRING,
     allowNull: false,
   },
+  preview: {
+    type: DataTypes.STRING(50),
+  },
 }, {
   sequelize,
   timestamps: true,
