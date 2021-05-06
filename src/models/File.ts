@@ -7,6 +7,7 @@ interface FileAttr {
   moduleId: string;
   title: string;
   filename: string;
+  preview: string | null;
 }
 
 class File extends Model implements FileAttr {
@@ -17,6 +18,8 @@ class File extends Model implements FileAttr {
   public title!: string;
 
   public filename!: string;
+
+  public preview!: string | null;
 }
 
 File.init({

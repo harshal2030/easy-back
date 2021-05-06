@@ -14,6 +14,7 @@ import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevel
 import { SendOnError } from '../utils/functions';
 import { videoExtPattern } from '../utils/regexPatterns';
 import { previewFilePath, modulePath } from '../utils/paths';
+import { FileStorage } from '../services/FileStorage';
 
 const router = express.Router();
 
@@ -105,6 +106,7 @@ router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) =
         moduleId: req.params.moduleId,
       },
       attributes: { exclude: ['updatedAt'] },
+      order: [['createdAt', 'DESC']],
     });
 
     res.send(files);
@@ -157,6 +159,54 @@ router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => 
       res.writeHead(200, head);
       fs.createReadStream(filePath).pipe(res);
     }
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
+router.delete('/:classId/:moduleId/:fileId', auth, mustBeClassOwner, async (req, res) => {
+  try {
+    const moduleRef = Module.findOne({
+      where: {
+        classId: req.params.classId,
+        id: req.params.moduleId,
+      },
+    });
+
+    const fileRef = File.findOne({
+      where: {
+        id: req.params.fileId,
+        moduleId: req.params.moduleId,
+      },
+    });
+
+    const [module, file] = await Promise.all([moduleRef, fileRef]);
+
+    if (!module) {
+      throw new Error();
+    }
+
+    if (!file) {
+      throw new Error();
+    }
+
+    const deleteFile = await File.destroy({
+      where: {
+        id: req.params.fileId,
+        moduleId: req.params.moduleId,
+      },
+    });
+
+    if (!deleteFile) {
+      throw new Error();
+    }
+
+    await Promise.all([
+      FileStorage.deleteFile(file.filename, modulePath),
+      FileStorage.deleteFile(file.preview!, previewFilePath),
+    ]);
+
+    res.send();
   } catch (e) {
     SendOnError(e, res);
   }
