@@ -15,6 +15,9 @@ interface ClassAttr {
   collaborators: string[];
   joinCode: string;
   lockJoin: boolean;
+  payId: string | null;
+  payedOn: Date | null;
+  planId: string;
 }
 
 class Class extends Model implements ClassAttr {
@@ -35,6 +38,12 @@ class Class extends Model implements ClassAttr {
   public joinCode!: string;
 
   public lockJoin!: boolean;
+
+  public payId!: string | null;
+
+  public payedOn!: Date | null;
+
+  public planId!: string;
 
   public readonly createdAt!: Date;
 
@@ -106,6 +115,18 @@ Class.init({
   lockJoin: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
+  },
+  payId: {
+    type: DataTypes.STRING,
+    defaultValue: null,
+  },
+  payedOn: {
+    type: DataTypes.DATE,
+    defaultValue: null,
+  },
+  planId: {
+    type: DataTypes.STRING,
+    defaultValue: 'free',
   },
 }, {
   sequelize,

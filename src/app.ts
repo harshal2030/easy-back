@@ -17,6 +17,8 @@ import resultRouter from './routers/result';
 import messageRouter from './routers/messages';
 import moduleRouter from './routers/module';
 import fileRouter from './routers/files';
+import vidTracker from './routers/videoTracker';
+import paymentRouter from './routers/payments';
 
 const app: Application = express();
 const server = http.createServer(app);
@@ -31,6 +33,8 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
 
+app.use(express.static(path.join(__dirname, '../../media/class/hls')));
+
 app.use('/users', userRouter);
 app.use('/class', classRouter);
 app.use('/media', mediaRouter);
@@ -41,6 +45,8 @@ app.use('/result', resultRouter);
 app.use('/msg', messageRouter);
 app.use('/module', moduleRouter);
 app.use('/file', fileRouter);
+app.use('/vidtracker', vidTracker);
+app.use('/pay', paymentRouter);
 
 app.get('/', (_req, res) => {
   res.send('Hello');
