@@ -3,8 +3,6 @@ import BusBoy from 'busboy';
 import path from 'path';
 import fs from 'fs';
 import { nanoid } from 'nanoid';
-import ffmpeg from 'fluent-ffmpeg';
-import meter from 'stream-meter';
 
 import { Module } from '../models/Module';
 import { File } from '../models/File';
@@ -15,7 +13,6 @@ import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevel
 import { SendOnError } from '../utils/functions';
 import { videoExtPattern } from '../utils/regexPatterns';
 import { previewFilePath, modulePath } from '../utils/paths';
-import { FileStorage } from '../services/FileStorage';
 
 const router = express.Router();
 
@@ -43,27 +40,20 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
 
     // {moduleId: string; title: string; filename: string; preview: string}
     const data: {[fieldName: string]: string} = {};
-    const m = meter();
 
     busboy.on('file', (_fieldname, file, filename) => {
       if (filename.match(videoExtPattern)) {
         const filenameToSave = `${nanoid()}${path.extname(filename)}`;
         const saveTo = `${modulePath}/${filenameToSave}`;
         const stream = fs.createWriteStream(saveTo);
-        file.pipe(m).pipe(stream).on('finish', () => {
-          console.log(m.bytes);
-          console.log(m.bytes / (1024 * 1024));
+        file.pipe(stream).on('finish', () => {
+          File.processVideo({
+            videoPath: saveTo,
+            title: data.title,
+            classId: req.params.classId,
+            moduleId: req.params.moduleId,
+          });
         });
-
-        const previewFileName = `${nanoid()}.png`;
-        ffmpeg(saveTo).takeScreenshots({
-          count: 1,
-          timemarks: ['1'],
-          filename: previewFileName,
-        }, previewFilePath);
-
-        data.filename = filenameToSave;
-        data.preview = previewFileName;
 
         file.on('error', () => {
           fs.unlink(saveTo, () => null);
@@ -81,11 +71,8 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
       if (errored) {
         return res.status(400).send({ error: 'Check your file and check again' });
       }
-      data.moduleId = req.params.moduleId;
-      const createdFile = await File.create(data);
-      File.mp4ToHls480p(`${modulePath}/${createdFile.filename}`, createdFile.id);
       res.setHeader('Connection', 'close');
-      return res.send(createdFile);
+      return res.send();
     });
 
     return req.pipe(busboy);
@@ -157,21 +144,7 @@ router.delete('/:classId/:moduleId/:fileId', auth, mustBeClassOwner, async (req,
       throw new Error();
     }
 
-    const deleteFile = await File.destroy({
-      where: {
-        id: req.params.fileId,
-        moduleId: req.params.moduleId,
-      },
-    });
-
-    if (!deleteFile) {
-      throw new Error();
-    }
-
-    await Promise.all([
-      FileStorage.deleteFile(file.filename, modulePath),
-      FileStorage.deleteFile(file.preview!, previewFilePath),
-    ]);
+    await File.deleteFile(file, req.params.classId);
 
     res.send();
   } catch (e) {

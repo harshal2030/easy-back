@@ -39,9 +39,13 @@ router.post('/:classId/:moduleId/:videoId', auth, mustBeStudentOrOwner, async (r
 
     const now = new Date();
 
-    sequelize.query(`UPDATE "VideoTrackers" SET start=:start, stop=:stop WHERE username=:username AND stop-start < :stop::timestamp-:start::timestamp AND "createdAt"::TIMESTAMP::DATE=:createdAt::TIMESTAMP::DATE;
-      INSERT INTO "VideoTrackers" (id, "videoId", username, start, stop, "createdAt") SELECT :id, :videoId, :username, :start, :stop, :createdAt
-      WHERE NOT EXISTS (SELECT id FROM "VideoTrackers" WHERE username=:username AND "createdAt"::TIMESTAMP::DATE=:createdAt::TIMESTAMP::DATE)`, {
+    sequelize.query(`UPDATE "VideoTrackers" SET start=:start, stop=:stop
+      WHERE username=:username AND stop-start < :stop::timestamp-:start::timestamp
+      AND "createdAt"::TIMESTAMP::DATE=:createdAt::TIMESTAMP::DATE;
+      INSERT INTO "VideoTrackers" (id, "videoId", username, start, stop, "createdAt")
+      SELECT :id, :videoId, :username, :start, :stop, :createdAt
+      WHERE NOT EXISTS(SELECT id FROM "VideoTrackers" WHERE
+      username=:username AND "createdAt"::TIMESTAMP::DATE=:createdAt::TIMESTAMP::DATE AND "videoId"=:videoId)`, {
       replacements: {
         id: nanoid(),
         videoId: req.params.videoId,

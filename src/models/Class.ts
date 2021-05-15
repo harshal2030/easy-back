@@ -18,6 +18,7 @@ interface ClassAttr {
   payId: string | null;
   payedOn: Date | null;
   planId: string;
+  storageUsed: string;
 }
 
 class Class extends Model implements ClassAttr {
@@ -44,6 +45,8 @@ class Class extends Model implements ClassAttr {
   public payedOn!: Date | null;
 
   public planId!: string;
+
+  public storageUsed!: string;
 
   public readonly createdAt!: Date;
 
@@ -127,6 +130,11 @@ Class.init({
   planId: {
     type: DataTypes.STRING,
     defaultValue: 'free',
+  },
+  storageUsed: {
+    type: DataTypes.BIGINT,
+    defaultValue: 0,
+    allowNull: false,
   },
 }, {
   sequelize,

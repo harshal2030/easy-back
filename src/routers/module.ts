@@ -7,8 +7,6 @@ import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 
 import { SendOnError } from '../utils/functions';
-import { FileStorage } from '../services/FileStorage';
-import { modulePath, previewFilePath } from '../utils/paths';
 
 const router = express.Router();
 
@@ -52,29 +50,7 @@ router.delete('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) =>
       },
     });
 
-    const [deletedModule, deletedFile] = await Promise.all([
-      Module.destroy({
-        where: {
-          classId: req.params.classId,
-          id: req.params.moduleId,
-        },
-      }),
-      File.destroy({
-        where: {
-          moduleId: req.params.moduleId,
-        },
-      }),
-    ]);
-
-    if (!(deletedFile || deletedModule)) {
-      res.status(400).send({ error: 'Invalid parameters' });
-      return;
-    }
-
-    files.forEach((file) => {
-      FileStorage.deleteFile(file.filename, modulePath);
-      FileStorage.deleteFile(file.preview!, previewFilePath);
-    });
+    await File.bulkDeleteFiles(files, req.params.classId, req.params.moduleId);
 
     res.send();
   } catch (e) {
