@@ -2,6 +2,7 @@ import express from 'express';
 import BusBoy from 'busboy';
 import path from 'path';
 import fs from 'fs';
+import meter from 'stream-meter';
 import { nanoid } from 'nanoid';
 
 import { Module } from '../models/Module';
@@ -9,14 +10,18 @@ import { File } from '../models/File';
 
 import { auth, checkOnlyToken } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
+import { premiumService } from '../middlewares/premium';
+
+import { FileStorage } from '../services/FileStorage';
 
 import { SendOnError } from '../utils/functions';
 import { videoExtPattern } from '../utils/regexPatterns';
 import { previewFilePath, modulePath } from '../utils/paths';
+import { plans } from '../utils/plans';
 
 const router = express.Router();
 
-router.post('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
+router.post('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async (req, res) => {
   try {
     const moduleExists = await Module.findOne({
       where: {
@@ -29,10 +34,14 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
       return res.status(404).send({ error: "Module doesn't exists" });
     }
 
+    if (req.ownerClass!.planId === 'free') {
+      res.status(400).send({ error: 'Upgrade your class to access storage' });
+    }
+
     const busboy = new BusBoy({
       headers: req.headers,
       limits: {
-        fileSize: 5 * 1024 * 1000_000,
+        fileSize: 5 * 1024 * 1024 * 1024, // 5 GB upload limit
       },
     });
 
@@ -40,13 +49,20 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
 
     // {moduleId: string; title: string; filename: string; preview: string}
     const data: {[fieldName: string]: string} = {};
+    const m = meter();
 
     busboy.on('file', (_fieldname, file, filename) => {
       if (filename.match(videoExtPattern)) {
         const filenameToSave = `${nanoid()}${path.extname(filename)}`;
         const saveTo = `${modulePath}/${filenameToSave}`;
         const stream = fs.createWriteStream(saveTo);
-        file.pipe(stream).on('finish', () => {
+        file.pipe(m).pipe(stream).on('finish', () => {
+          if (m.bytes > (plans.standard.storage - parseInt(req.ownerClass!.storageUsed, 10))) {
+            errored = true;
+            FileStorage.deleteFileFromPath(saveTo);
+            return;
+          }
+
           File.processVideo({
             videoPath: saveTo,
             title: data.title,
@@ -57,6 +73,7 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
 
         file.on('error', () => {
           fs.unlink(saveTo, () => null);
+          errored = true;
         });
       } else {
         errored = true;
@@ -69,7 +86,7 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
 
     busboy.on('finish', async () => {
       if (errored) {
-        return res.status(400).send({ error: 'Check your file and check again' });
+        return res.status(400).send({ error: 'Unable to upload file' });
       }
       res.setHeader('Connection', 'close');
       return res.send();
@@ -109,6 +126,48 @@ router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) =
 });
 
 router.use('/:classId/:moduleId', checkOnlyToken, express.static(path.join(__dirname, '../../../media/class/hls')));
+
+router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => {
+  try {
+    const filePath = path.join(__dirname, '../../../media/class/modules', req.params.fileName);
+    const stat = fs.statSync(filePath);
+    const fileSize = stat.size;
+    const { range } = req.headers;
+    console.log(req.headers);
+
+    if (range) {
+      const parts = range.replace(/bytes=/, '').split('-');
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+
+      if (start >= fileSize) {
+        res.status(416).send({ error: 'Requested range not satisfiable' });
+        return;
+      }
+
+      const chunkSize = (end - start) + 1;
+      const file = fs.createReadStream(filePath, { start, end });
+      const head = {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Range': 'bytes',
+        'Content-Length': chunkSize,
+        'Content-Type': 'video/mp4',
+      };
+
+      res.writeHead(206, head);
+      file.pipe(res);
+    } else {
+      const head = {
+        'Content-Length': fileSize,
+        'Content-Type': 'video/mp4',
+      };
+      res.writeHead(200, head);
+      fs.createReadStream(filePath).pipe(res);
+    }
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
 
 router.get('/preview/:classId/:previewFile', auth, mustBeStudentOrOwner, async (req, res) => {
   try {

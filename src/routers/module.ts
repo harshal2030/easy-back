@@ -5,12 +5,13 @@ import { File } from '../models/File';
 
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
+import { premiumService } from '../middlewares/premium';
 
 import { SendOnError } from '../utils/functions';
 
 const router = express.Router();
 
-router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
+router.post('/:classId', auth, mustBeClassOwner, premiumService, async (req, res) => {
   try {
     const module = await Module.create({
       title: req.body.title,
@@ -23,7 +24,7 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
   }
 });
 
-router.put('/:classId/:moduleId', auth, mustBeClassOwner, async (req, res) => {
+router.put('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async (req, res) => {
   try {
     const module = await Module.update({
       title: req.body.title,

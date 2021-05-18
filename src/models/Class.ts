@@ -1,9 +1,11 @@
-import { Model, DataTypes } from 'sequelize';
+import { Model, DataTypes, Op } from 'sequelize';
 import { nanoid } from 'nanoid';
 
 import sequelize from '../db';
 import { User } from './User';
 import { Student } from './Student';
+
+import { oneMonthDiff } from '../utils/plans';
 
 interface ClassAttr {
   id: string;
@@ -17,7 +19,7 @@ interface ClassAttr {
   lockJoin: boolean;
   payId: string | null;
   payedOn: Date | null;
-  planId: string;
+  planId: 'free' | 'standard';
   storageUsed: string;
 }
 
@@ -44,7 +46,7 @@ class Class extends Model implements ClassAttr {
 
   public payedOn!: Date | null;
 
-  public planId!: string;
+  public planId!: 'free' | 'standard';
 
   public storageUsed!: string;
 
@@ -55,6 +57,75 @@ class Class extends Model implements ClassAttr {
   public readonly students!: Student[];
 
   public readonly owner!: User;
+
+  public static async updateExpiredClasses(ids :string[]) {
+    try {
+      await Class.update({
+        planId: 'free',
+        payId: null,
+        payedOn: null,
+      }, {
+        where: {
+          id: {
+            [Op.in]: ids,
+          },
+        },
+      });
+    } catch (e) {
+      // move on
+    }
+  }
+
+  toJSON() {
+    const expiredPlanClassesId: string[] = [];
+
+    if (this.payedOn) {
+      const timePassed = new Date().getTime() - this.payedOn.getTime();
+
+      if (timePassed > oneMonthDiff) {
+        expiredPlanClassesId.push(this.id);
+        this.planId = 'free';
+      }
+    }
+
+    const {
+      id,
+      name,
+      about,
+      subject,
+      joinCode,
+      collaborators,
+      lockJoin,
+      payId,
+      payedOn,
+      photo,
+      planId,
+      owner,
+      students,
+      storageUsed,
+      createdAt,
+      updatedAt,
+    } = this;
+
+    return {
+      id,
+      name,
+      about,
+      subject,
+      joinCode,
+      collaborators,
+      lockJoin,
+      payId,
+      payedOn,
+      photo,
+      planId,
+      owner,
+      students,
+      storageUsed: parseInt(storageUsed, 10),
+      updatedAt,
+      createdAt,
+    };
+  }
 }
 
 Class.init({
@@ -130,6 +201,18 @@ Class.init({
   planId: {
     type: DataTypes.STRING,
     defaultValue: 'free',
+    allowNull: false,
+    validate: {
+      checkIds(value: string | undefined) {
+        if (!value) {
+          throw new Error('Plan Id is required');
+        }
+
+        if (!['standard', 'free'].includes(value)) {
+          throw new Error('Invalid plan chosen');
+        }
+      },
+    },
   },
   storageUsed: {
     type: DataTypes.BIGINT,

@@ -177,15 +177,18 @@ class File extends Model implements FileAttr {
       }
     });
 
-    ffmpeg(videoPath).addOptions([
-      '-profile:v baseline', // baseline profile (level 3.0) for H264 video codec
-      '-level 3.0',
-      '-start_number 0', // start the first .ts segment at index 0
-      '-hls_time 10', // 10 second segment duration
-      '-hls_list_size 0', // Maximum number of playlist entries (0 means all entries/infinite)
-      '-f hls',
-    ])
+    ffmpeg(videoPath)
       .size('?x720')
+      .addOptions([
+        '-profile:v baseline', // baseline profile (level 3.0) for H264 video codec
+        '-level 3.0',
+        '-start_number 0',
+        '-vcodec libx264',
+        '-crf 23', // start the first .ts segment at index 0
+        '-hls_time 10', // 10 second segment duration
+        '-hls_list_size 0', // Maximum number of playlist entries (0 means all entries/infinite)
+        '-f hls',
+      ])
       .output(`${hlsPath}/${actualFileName}`)
       .on('end', async () => {
         await File.onSuccessProcessVideo({
@@ -197,7 +200,7 @@ class File extends Model implements FileAttr {
         }, classId, videoPath);
       })
       .on('error', () => {
-        // move on
+        FileStorage.deleteFileFromPath(videoPath);
       })
       .run();
   }

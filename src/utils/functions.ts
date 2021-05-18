@@ -43,4 +43,6 @@ const shuffleArray = <T>(arr: T[]): T[] => {
   return shuffleArr;
 };
 
-export { SendOnError, generateHash, shuffleArray };
+export {
+  SendOnError, generateHash, shuffleArray,
+};

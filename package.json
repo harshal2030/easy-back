@@ -34,6 +34,7 @@
     "pg-hstore": "^2.3.3",
     "sequelize": "^6.3.5",
     "sharp": "^0.26.1",
+    "stream-meter": "^1.0.4",
     "xlsx": "^0.16.8"
   },
   "devDependencies": {
