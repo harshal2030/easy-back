@@ -5,6 +5,7 @@ import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cors from 'cors';
 
 // routers
 import userRouter from './routers/user';

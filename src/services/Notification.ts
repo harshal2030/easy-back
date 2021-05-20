@@ -21,7 +21,9 @@ class Notification {
       ],
     });
 
-    const tokens = userTokens.map((user) => user.device!.fcmToken);
+    const tokens = userTokens
+      .map((user) => user.device!.fcmToken)
+      .filter((token) => token.trim().length !== 0);
 
     if (tokens.length !== 0 && process.env.NODE_ENV !== 'test') {
       firebase.messaging().sendMulticast({
