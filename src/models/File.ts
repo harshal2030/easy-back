@@ -1,15 +1,13 @@
 import { nanoid } from 'nanoid';
 import { DataTypes, Model, Op } from 'sequelize';
 import ffmpeg from 'fluent-ffmpeg';
-import fg from 'fast-glob';
-import path from 'path';
 
 import { VideoTracker } from './VideoTracker';
 import { Module } from './Module';
 
 import sequelize from '../db';
 
-import { previewFilePath, hlsPath } from '../utils/paths';
+import { previewFilePath, modulePath } from '../utils/paths';
 
 import { FileStorage } from '../services/FileStorage';
 import { Class } from './Class';
@@ -78,7 +76,12 @@ class File extends Model implements FileAttr {
         transaction: t,
       });
 
-      const filesIds = files.map((file) => file.id);
+      const filesIds = files.map((file) => {
+        FileStorage.deleteFile(file.filename, modulePath);
+        FileStorage.deleteFile(file.preview!, previewFilePath);
+
+        return file.id;
+      });
       const fileSizeArray = files.map((file) => parseInt(file.fileSize, 10));
       const totalFileSize = fileSizeArray.length === 0 ? 0 : fileSizeArray.reduce((a, b) => a + b);
 
@@ -102,19 +105,6 @@ class File extends Model implements FileAttr {
       });
 
       await t.commit();
-
-      let globString = '{';
-
-      files.forEach((file) => {
-        globString += `${path.parse(file.filename).name},`;
-        FileStorage.deleteFile(file.preview!, previewFilePath);
-        FileStorage.deleteFile(file.filename, hlsPath);
-      });
-
-      globString += '}[0-9]*';
-
-      const filenames = await fg(globString, { cwd: hlsPath });
-      filenames.forEach((filename) => FileStorage.deleteFile(filename, hlsPath));
     } catch (err) {
       await t.rollback();
     }
@@ -148,12 +138,11 @@ class File extends Model implements FileAttr {
 
     await t.commit();
 
-    const filenames = await fg(`${path.parse(file.filename).name}[0-9]*`, { cwd: hlsPath });
-    filenames.forEach((filename) => FileStorage.deleteFile(filename, hlsPath));
     FileStorage.deleteFile(file.preview!, previewFilePath);
-    FileStorage.deleteFile(file.filename, hlsPath);
+    FileStorage.deleteFile(file.filename, modulePath, (e) => console.log(e));
   }
 
+  // when using HLS streaming but not now
   static processVideo(
     videoData: {videoPath: string; title: string; moduleId: string; classId: string},
   ) {
@@ -189,7 +178,7 @@ class File extends Model implements FileAttr {
         '-hls_list_size 0', // Maximum number of playlist entries (0 means all entries/infinite)
         '-f hls',
       ])
-      .output(`${hlsPath}/${actualFileName}`)
+      .output(`${modulePath}/${actualFileName}`)
       .on('end', async () => {
         await File.onSuccessProcessVideo({
           moduleId,

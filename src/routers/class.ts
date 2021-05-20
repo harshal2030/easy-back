@@ -106,11 +106,8 @@ router.get('/', auth, async (req, res) => {
       ],
     });
 
-    console.log(classes);
-
     res.send(classes);
   } catch (e) {
-    console.log(e);
     SendOnError(e, res);
   }
 });
@@ -154,6 +151,8 @@ router.post('/join', auth, async (req, res) => {
         attributes: ['username', 'avatar', 'name'],
       }],
     });
+
+    console.log(classToJoin);
 
     if (!classToJoin) {
       res.status(404).send({ error: 'No such class found' });

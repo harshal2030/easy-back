@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import meter from 'stream-meter';
 import { nanoid } from 'nanoid';
+import ffmpeg from 'fluent-ffmpeg';
 
 import { Module } from '../models/Module';
 import { File } from '../models/File';
@@ -63,11 +64,20 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async
             return;
           }
 
-          File.processVideo({
-            videoPath: saveTo,
-            title: data.title,
-            classId: req.params.classId,
+          const previewName = `${nanoid()}.png`;
+
+          ffmpeg(saveTo).takeScreenshots({
+            timemarks: [1],
+            count: 1,
+            filename: previewName,
+          }, previewFilePath);
+
+          File.create({
             moduleId: req.params.moduleId,
+            title: data.title,
+            filename: filenameToSave,
+            fileSize: m.bytes,
+            preview: previewName,
           });
         });
 
@@ -125,7 +135,13 @@ router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) =
   }
 });
 
-router.use('/:classId/:moduleId', checkOnlyToken, express.static(path.join(__dirname, '../../../media/class/hls')));
+router.get('/preview/:classId/:previewFile', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    res.sendFile(`${previewFilePath}/${req.params.previewFile}`);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
 
 router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => {
   try {
@@ -133,7 +149,6 @@ router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => 
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
     const { range } = req.headers;
-    console.log(req.headers);
 
     if (range) {
       const parts = range.replace(/bytes=/, '').split('-');
@@ -164,14 +179,6 @@ router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => 
       res.writeHead(200, head);
       fs.createReadStream(filePath).pipe(res);
     }
-  } catch (e) {
-    SendOnError(e, res);
-  }
-});
-
-router.get('/preview/:classId/:previewFile', auth, mustBeStudentOrOwner, async (req, res) => {
-  try {
-    res.sendFile(`${previewFilePath}/${req.params.previewFile}`);
   } catch (e) {
     SendOnError(e, res);
   }
