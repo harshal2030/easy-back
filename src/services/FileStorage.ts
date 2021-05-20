@@ -2,10 +2,14 @@ import fs from 'fs';
 import sharp from 'sharp';
 
 class FileStorage {
-  static async deleteFile(fileName: string, prefixPath?: string, errCallback?: fs.NoParamCallback) {
+  static deleteFile(fileName: string, prefixPath?: string, errCallback?: fs.NoParamCallback) {
     if (prefixPath) {
       fs.unlink(`${prefixPath}/${fileName}`, errCallback || (() => null));
     }
+  }
+
+  static deleteFileFromPath(path: string, errCB?: fs.NoParamCallback) {
+    fs.unlink(path, errCB || (() => null));
   }
 
   static async saveImageFromBuffer(buffer: Buffer, fileName: string, prefixPath?: string) {

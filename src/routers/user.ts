@@ -10,6 +10,7 @@ import { Student } from '../models/Student';
 import { Result } from '../models/Result';
 import { Announcement } from '../models/Announcement';
 import { Recovery } from '../models/Recovery';
+import { VideoTracker } from '../models/VideoTracker';
 import sequelize from '../db';
 
 import { auth } from '../middlewares/auth';
@@ -319,7 +320,7 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
 
     let token = req.token!;
 
-    if (data.username) {
+    if (data.username && data.username !== req.user!.username) {
       const newTokens = User.generateJWTAndUpdateArray(data.username, token!, req.user!.tokens);
 
       token = newTokens.token;
@@ -361,7 +362,17 @@ router.put('/', auth, mediaMiddleware, async (req, res) => {
         transaction: t,
       });
 
-      await Promise.all([studentUpdate, resultUpdate, deviceUpdate, announceUpdate]);
+      const vidTrackerUpdate = VideoTracker.update({
+        username: data.username,
+      }, {
+        where: {
+          username: data.username,
+        },
+      });
+
+      await Promise.all([
+        studentUpdate, resultUpdate, deviceUpdate, announceUpdate, vidTrackerUpdate,
+      ]);
     }
 
     const userToUpdate = await User.update(data, {

@@ -1,9 +1,11 @@
-import { Model, DataTypes } from 'sequelize';
+import { Model, DataTypes, Op } from 'sequelize';
 import { nanoid } from 'nanoid';
 
 import sequelize from '../db';
 import { User } from './User';
 import { Student } from './Student';
+
+import { oneMonthDiff } from '../utils/plans';
 
 interface ClassAttr {
   id: string;
@@ -15,6 +17,10 @@ interface ClassAttr {
   collaborators: string[];
   joinCode: string;
   lockJoin: boolean;
+  payId: string | null;
+  payedOn: Date | null;
+  planId: 'free' | 'standard';
+  storageUsed: string;
 }
 
 class Class extends Model implements ClassAttr {
@@ -36,6 +42,14 @@ class Class extends Model implements ClassAttr {
 
   public lockJoin!: boolean;
 
+  public payId!: string | null;
+
+  public payedOn!: Date | null;
+
+  public planId!: 'free' | 'standard';
+
+  public storageUsed!: string;
+
   public readonly createdAt!: Date;
 
   public readonly updatedAt!: Date;
@@ -43,6 +57,75 @@ class Class extends Model implements ClassAttr {
   public readonly students!: Student[];
 
   public readonly owner!: User;
+
+  public static async updateExpiredClasses(ids :string[]) {
+    try {
+      await Class.update({
+        planId: 'free',
+        payId: null,
+        payedOn: null,
+      }, {
+        where: {
+          id: {
+            [Op.in]: ids,
+          },
+        },
+      });
+    } catch (e) {
+      // move on
+    }
+  }
+
+  toJSON() {
+    const expiredPlanClassesId: string[] = [];
+
+    if (this.payedOn) {
+      const timePassed = new Date().getTime() - this.payedOn.getTime();
+
+      if (timePassed > oneMonthDiff) {
+        expiredPlanClassesId.push(this.id);
+        this.planId = 'free';
+      }
+    }
+
+    const {
+      id,
+      name,
+      about,
+      subject,
+      joinCode,
+      collaborators,
+      lockJoin,
+      payId,
+      payedOn,
+      photo,
+      planId,
+      owner,
+      students,
+      storageUsed,
+      createdAt,
+      updatedAt,
+    } = this;
+
+    return {
+      id,
+      name,
+      about,
+      subject,
+      joinCode,
+      collaborators,
+      lockJoin,
+      payId,
+      payedOn,
+      photo,
+      planId,
+      owner,
+      students,
+      storageUsed: parseInt(storageUsed, 10),
+      updatedAt,
+      createdAt,
+    };
+  }
 }
 
 Class.init({
@@ -106,6 +189,35 @@ Class.init({
   lockJoin: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
+  },
+  payId: {
+    type: DataTypes.STRING,
+    defaultValue: null,
+  },
+  payedOn: {
+    type: DataTypes.DATE,
+    defaultValue: null,
+  },
+  planId: {
+    type: DataTypes.STRING,
+    defaultValue: 'free',
+    allowNull: false,
+    validate: {
+      checkIds(value: string | undefined) {
+        if (!value) {
+          throw new Error('Plan Id is required');
+        }
+
+        if (!['standard', 'free'].includes(value)) {
+          throw new Error('Invalid plan chosen');
+        }
+      },
+    },
+  },
+  storageUsed: {
+    type: DataTypes.BIGINT,
+    defaultValue: 0,
+    allowNull: false,
   },
 }, {
   sequelize,

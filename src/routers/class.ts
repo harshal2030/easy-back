@@ -3,16 +3,17 @@ import multer from 'multer';
 import { nanoid } from 'nanoid';
 import { Op } from 'sequelize';
 
-import { FileStorage } from '../services/FileStorage';
-import { SendOnError } from '../utils/functions';
-import { classImagePath } from '../utils/paths';
-
 import { Class } from '../models/Class';
 import { User } from '../models/User';
 import { Student } from '../models/Student';
 
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
+
+import { FileStorage } from '../services/FileStorage';
+import { SendOnError } from '../utils/functions';
+import { classImagePath } from '../utils/paths';
+import { oneMonthDiff } from '../utils/plans';
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ const upload = multer({
     fileSize: 5 * 1000000,
   },
   fileFilter(_req, file, cb) {
-    if (!file.originalname.match(/\.(PNG|JPEG|JPG|png|jpeg|jpg)$/)) {
+    if (!file.originalname.match(/\.(PNG|JPEG|JPG|png|jpeg|jpg)$/i)) {
       return cb(Error('Unsupported files uploaded to server'));
     }
 
@@ -54,7 +55,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
 
     const section = await Class.create({ ...data, ownerRef: req.user!.username, photo: fileName });
     const {
-      id, name, about, photo, collaborators, subject, joinCode, lockJoin,
+      id, name, about, photo, collaborators, subject, joinCode, lockJoin, payId, payedOn, planId,
     } = section;
     return res.status(201).send({
       id,
@@ -65,6 +66,9 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       subject,
       joinCode,
       lockJoin,
+      payId,
+      payedOn,
+      planId,
       owner: {
         username: req.user!.username,
         avatar: req.user!.avatar,
@@ -85,7 +89,7 @@ router.get('/', auth, async (req, res) => {
           '$students.username$': req.user!.username,
         },
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payId', 'payedOn', 'planId'],
       include: [
         {
           model: User,
@@ -114,7 +118,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
       where: {
         id: req.params.classId,
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payedOn', 'planId', 'payId'],
       include: [{
         model: User,
         as: 'owner',
@@ -139,7 +143,7 @@ router.post('/join', auth, async (req, res) => {
           [Op.ne]: req.user!.username,
         },
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payedOn', 'planId', 'payId'],
       include: [{
         model: User,
         as: 'owner',
@@ -148,8 +152,36 @@ router.post('/join', auth, async (req, res) => {
       }],
     });
 
+    console.log(classToJoin);
+
     if (!classToJoin) {
-      return res.status(404).send({ error: 'No such class found' });
+      res.status(404).send({ error: 'No such class found' });
+      return;
+    }
+
+    const studentsInClass = await Student.count({
+      where: {
+        classId: classToJoin.id,
+      },
+    });
+
+    if (studentsInClass >= 100 && classToJoin.planId === 'free') {
+      res.status(400).send({ error: 'Class seats quota limit reached' });
+      return;
+    }
+
+    if (studentsInClass >= 1000) {
+      if (!classToJoin.payedOn) {
+        res.status(400).send({ error: 'Class seats quota limit reached' });
+        return;
+      }
+
+      const timePassed = new Date().getTime() - classToJoin.payedOn.getTime();
+
+      if (timePassed > oneMonthDiff) {
+        res.status(400).send({ error: 'Class seats quota limit reached' });
+        return;
+      }
     }
 
     const alreadyJoined = await Student.findOne({
@@ -168,9 +200,9 @@ router.post('/join', auth, async (req, res) => {
       username: req.user!.username,
     });
 
-    return res.send(classToJoin);
+    res.send(classToJoin);
   } catch (e) {
-    return SendOnError(e, res);
+    SendOnError(e, res);
   }
 });
 
@@ -206,13 +238,16 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
     });
 
     const {
-      id, name, about, photo, collaborators, subject, joinCode, lockJoin,
+      id, name, about, photo, collaborators, subject, joinCode, lockJoin, payId, planId, payedOn,
     } = classToUpdate[1][0];
 
     return res.send({
       id,
       name,
       about,
+      payId,
+      payedOn,
+      planId,
       photo,
       collaborators,
       subject,

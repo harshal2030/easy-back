@@ -39,6 +39,32 @@ class Notification {
       });
     }
   }
+
+  static async sendToUser(username: string, token: string, title: string, body: string) {
+    try {
+      if (process.env.NODE_ENV !== 'test') {
+        const device = await Device.findOne({
+          where: {
+            username,
+            token,
+          },
+          attributes: ['fcmToken'],
+        });
+
+        if (device) {
+          firebase.messaging().send({
+            token: device.fcmToken,
+            notification: {
+              title,
+              body,
+            },
+          });
+        }
+      }
+    } catch (e) {
+      // move on
+    }
+  }
 }
 
 // eslint-disable-next-line import/prefer-default-export

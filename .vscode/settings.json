@@ -1,6 +1,9 @@
 {
     "cSpell.words": [
         "JSONB",
-        "middlewares"
-    ]
+        "fieldname",
+        "middlewares",
+        "timemarks"
+    ],
+    "compile-hero.disable-compile-files-on-did-save-code": true
 }

@@ -37,4 +37,16 @@ const auth = async (req: Request, res: Response, next: NextFunction) => {
   }
 };
 
-export { auth };
+const checkOnlyToken = (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const token = req.header('Authorization')!.replace('Bearer ', '');
+    const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as {username: string};
+
+    req.username = decoded.username;
+    next();
+  } catch (e) {
+    res.status(401).send();
+  }
+};
+
+export { auth, checkOnlyToken };
