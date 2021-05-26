@@ -53,10 +53,25 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       await FileStorage.saveImageFromBuffer(buffer, fileName, classImagePath);
     }
 
-    const section = await Class.create({ ...data, ownerRef: req.user!.username, photo: fileName });
+    const classCreated = await Class.create({
+      ...data, ownerRef: req.user!.username, photo: fileName,
+    });
+
     const {
-      id, name, about, photo, collaborators, subject, joinCode, lockJoin, payId, payedOn, planId,
-    } = section;
+      id,
+      name,
+      about,
+      photo,
+      collaborators,
+      subject,
+      joinCode,
+      lockJoin,
+      payId,
+      payedOn,
+      planId,
+      storageUsed,
+    } = classCreated;
+
     return res.status(201).send({
       id,
       name,
@@ -69,6 +84,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       payId,
       payedOn,
       planId,
+      storageUsed: parseInt(storageUsed, 10),
       owner: {
         username: req.user!.username,
         avatar: req.user!.avatar,
@@ -89,7 +105,7 @@ router.get('/', auth, async (req, res) => {
           '$students.username$': req.user!.username,
         },
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payId', 'payedOn', 'planId'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payId', 'payedOn', 'planId', 'storageUsed'],
       include: [
         {
           model: User,
@@ -118,7 +134,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
       where: {
         id: req.params.classId,
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payedOn', 'planId', 'payId'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payedOn', 'planId', 'payId', 'storageUsed'],
       include: [{
         model: User,
         as: 'owner',
@@ -143,7 +159,7 @@ router.post('/join', auth, async (req, res) => {
           [Op.ne]: req.user!.username,
         },
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payedOn', 'planId', 'payId'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payedOn', 'planId', 'payId', 'storageUsed'],
       include: [{
         model: User,
         as: 'owner',
@@ -151,8 +167,6 @@ router.post('/join', auth, async (req, res) => {
         attributes: ['username', 'avatar', 'name'],
       }],
     });
-
-    console.log(classToJoin);
 
     if (!classToJoin) {
       res.status(404).send({ error: 'No such class found' });
@@ -192,7 +206,8 @@ router.post('/join', auth, async (req, res) => {
     });
 
     if (alreadyJoined) {
-      return res.status(400).send();
+      res.status(400).send();
+      return;
     }
 
     await Student.create({
@@ -238,7 +253,18 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
     });
 
     const {
-      id, name, about, photo, collaborators, subject, joinCode, lockJoin, payId, planId, payedOn,
+      id,
+      name,
+      about,
+      photo,
+      collaborators,
+      subject,
+      joinCode,
+      lockJoin,
+      payId,
+      planId,
+      payedOn,
+      storageUsed,
     } = classToUpdate[1][0];
 
     return res.send({
@@ -258,6 +284,7 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
         avatar: req.user!.avatar,
         name: req.user!.name,
       },
+      storageUsed: parseInt(storageUsed, 10),
     });
   } catch (e) {
     return SendOnError(e, res);

@@ -57,7 +57,7 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async
         const filenameToSave = `${nanoid()}${path.extname(filename)}`;
         const saveTo = `${modulePath}/${filenameToSave}`;
         const stream = fs.createWriteStream(saveTo);
-        file.pipe(m).pipe(stream).on('finish', () => {
+        file.pipe(m).pipe(stream).on('finish', async () => {
           if (m.bytes > (plans.standard.storage - parseInt(req.ownerClass!.storageUsed, 10))) {
             errored = true;
             FileStorage.deleteFileFromPath(saveTo);
@@ -72,13 +72,13 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async
             filename: previewName,
           }, previewFilePath);
 
-          File.create({
+          await File.onSuccessProcessVideo({
             moduleId: req.params.moduleId,
             title: data.title,
             filename: filenameToSave,
-            fileSize: m.bytes,
             preview: previewName,
-          });
+            fileSize: m.bytes,
+          }, req.params.classId);
         });
 
         file.on('error', () => {

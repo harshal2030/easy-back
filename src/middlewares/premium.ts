@@ -15,12 +15,12 @@ const premiumService = (req: Request, res: Response, next: NextFunction) => {
   }
 
   if (req.ownerClass.planId === 'standard') {
-    if (!req.ownerClass.payedOn) {
+    if (!req.ownerClass.payId) {
       res.status(401).send({ error: 'Upgrade to paid plan to use this feature or request the owner' });
       return;
     }
 
-    const timePassed = new Date().getTime() - req.ownerClass.payedOn.getTime();
+    const timePassed = new Date().getTime() - req.ownerClass.payedOn!.getTime();
 
     if (timePassed > oneMonthDiff) {
       res.status(401).send({ error: 'Upgrade to paid plan to use this feature or request the owner' });

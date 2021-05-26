@@ -63,7 +63,6 @@ class Class extends Model implements ClassAttr {
       await Class.update({
         planId: 'free',
         payId: null,
-        payedOn: null,
       }, {
         where: {
           id: {
@@ -79,8 +78,8 @@ class Class extends Model implements ClassAttr {
   toJSON() {
     const expiredPlanClassesId: string[] = [];
 
-    if (this.payedOn) {
-      const timePassed = new Date().getTime() - this.payedOn.getTime();
+    if (this.payId) {
+      const timePassed = new Date().getTime() - this.payedOn!.getTime();
 
       if (timePassed > oneMonthDiff) {
         expiredPlanClassesId.push(this.id);

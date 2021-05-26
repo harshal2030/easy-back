@@ -11,6 +11,11 @@ interface planAttr {
   price: number;
 }
 
+interface offerAttr {
+  id: string;
+  amountOff: number;
+}
+
 const plans: { [id: string]: planAttr } = {
   standard: {
     id: 'standard',
@@ -21,6 +26,17 @@ const plans: { [id: string]: planAttr } = {
   },
 };
 
-export { oneMonthDiff, plans };
+const offers: { [id: string]: offerAttr } = {
+  HAROFF_100: {
+    id: 'HAROFF_100',
+    amountOff: 10000,
+  },
+  HAROFF_60: {
+    id: 'HAROFF_60',
+    amountOff: 6000,
+  },
+};
+
+export { oneMonthDiff, plans, offers };
 
 export type { planAttr };

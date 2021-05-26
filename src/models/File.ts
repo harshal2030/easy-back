@@ -36,25 +36,30 @@ class File extends Model implements FileAttr {
 
   static async onSuccessProcessVideo(videoData: {
     moduleId: string; title: string; filename: string; preview: string; fileSize: number;
-  }, classId: string, oldVideoPath: string) {
+  }, classId: string, oldVideoPath?: string) {
     const t = await sequelize.transaction();
 
-    const fileRef = File.create(videoData, {
-      transaction: t,
-    });
-    const classRef = Class.increment('storageUsed', {
-      by: videoData.fileSize,
-      where: {
-        id: classId,
-      },
-      transaction: t,
-    });
-    const deleteMp4 = FileStorage.deleteFileFromPath(oldVideoPath);
+    try {
+      const fileRef = File.create(videoData, {
+        transaction: t,
+      });
+      const classRef = Class.increment('storageUsed', {
+        by: videoData.fileSize,
+        where: {
+          id: classId,
+        },
+        transaction: t,
+      });
 
-    const [file] = await Promise.all([fileRef, classRef, deleteMp4]);
-    await t.commit();
+      if (oldVideoPath) {
+        FileStorage.deleteFileFromPath(oldVideoPath);
+      }
 
-    return file;
+      await Promise.all([fileRef, classRef]);
+      await t.commit();
+    } catch (e) {
+      await t.rollback();
+    }
   }
 
   static async bulkDeleteFiles(files: File[], classId: string, moduleId: string) {
@@ -139,7 +144,7 @@ class File extends Model implements FileAttr {
     await t.commit();
 
     FileStorage.deleteFile(file.preview!, previewFilePath);
-    FileStorage.deleteFile(file.filename, modulePath, (e) => console.log(e));
+    FileStorage.deleteFile(file.filename, modulePath);
   }
 
   // when using HLS streaming but not now

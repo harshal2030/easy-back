@@ -7,11 +7,12 @@ import sequelize from '../db';
 import { Question, queSheet } from '../models/Questions';
 import { Quiz } from '../models/Quiz';
 import { Result } from '../models/Result';
+import { Class } from '../models/Class';
 
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { SendOnError, shuffleArray } from '../utils/functions';
-import { Class } from '../models/Class';
+import { oneMonthDiff } from '../utils/plans';
 
 const router = express.Router();
 
@@ -47,11 +48,38 @@ router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, re
     { value: data.timePeriod[1], inclusive: true },
   ] : null;
 
+  const t = await sequelize.transaction();
+
   try {
+    const quizCreatedCount = await Quiz.count({
+      where: {
+        classId: req.params.classId,
+      },
+    });
+
+    if (quizCreatedCount >= 10 && req.ownerClass!.planId === 'free') {
+      res.status(400).send({ error: 'Test quota limit reached for this class' });
+      return;
+    }
+
+    if (!req.ownerClass!.payId) {
+      res.status(400).send({ error: 'Class seats quota limit reached' });
+      return;
+    }
+
+    const timePassed = new Date().getTime() - req.ownerClass!.payedOn!.getTime();
+
+    if (timePassed > oneMonthDiff) {
+      res.status(400).send({ error: 'Class seats quota limit reached' });
+      return;
+    }
+
     const quiz = await Quiz.create({
       ...data,
       timePeriod: range,
       classId: req.params.classId,
+    }, {
+      transaction: t,
     });
 
     const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
@@ -60,11 +88,13 @@ router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, re
     const queData = XLSX.utils.sheet_to_json<queSheet>(workbook.Sheets[sheets[0]]);
     const formattedData = Question.formatQueSheet(queData, quiz.quizId);
 
-    await Question.bulkCreate(formattedData);
+    await Question.bulkCreate(formattedData, { transaction: t });
+    await t.commit();
 
-    return res.status(201).send(quiz);
+    res.status(201).send(quiz);
   } catch (e) {
-    return SendOnError(e, res);
+    await t.rollback();
+    SendOnError(e, res);
   }
 });
 
