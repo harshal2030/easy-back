@@ -9,7 +9,7 @@ import ffmpeg from 'fluent-ffmpeg';
 import { Module } from '../models/Module';
 import { File } from '../models/File';
 
-import { auth, checkOnlyToken } from '../middlewares/auth';
+import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { premiumService } from '../middlewares/premium';
 
@@ -135,7 +135,7 @@ router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) =
   }
 });
 
-router.get('/preview/:classId/:previewFile', auth, mustBeStudentOrOwner, async (req, res) => {
+router.get('/preview/:classId/:previewFile', async (req, res) => {
   try {
     res.sendFile(`${previewFilePath}/${req.params.previewFile}`);
   } catch (e) {
@@ -143,7 +143,7 @@ router.get('/preview/:classId/:previewFile', auth, mustBeStudentOrOwner, async (
   }
 });
 
-router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => {
+router.get('/:classId/:moduleId/:fileName', async (req, res) => {
   try {
     const filePath = path.join(__dirname, '../../../media/class/modules', req.params.fileName);
     const stat = fs.statSync(filePath);

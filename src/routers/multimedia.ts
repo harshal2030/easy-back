@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import fs from 'fs';
 
 import { SendOnError } from '../utils/functions';
 import { avatarPath, classImagePath } from '../utils/paths';
@@ -8,7 +9,11 @@ const router = express.Router();
 
 router.get('/sample', async (_req, res) => {
   try {
-    res.sendFile(path.join(__dirname, '../../sample.xlsx'));
+    res.setHeader('Content-disposition', 'attachment; filename=sample.xlsx');
+    res.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+    const file = fs.createReadStream(path.join(__dirname, '../../sample.xlsx'));
+    file.pipe(res);
   } catch (e) {
     res.status(500).send();
   }

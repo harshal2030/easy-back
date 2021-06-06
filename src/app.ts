@@ -2,6 +2,7 @@ import express, { Application } from 'express';
 import http from 'http';
 import path from 'path';
 import compression from 'compression';
+import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 
@@ -23,6 +24,7 @@ const app: Application = express();
 const server = http.createServer(app);
 
 app.use(compression());
+app.use(cors());
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
