@@ -39,11 +39,18 @@ const auth = async (req: Request, res: Response, next: NextFunction) => {
 
 const checkOnlyToken = (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = req.header('Authorization')!.replace('Bearer ', '');
-    const decoded = jwt.verify(token, publicKey, { algorithms: ['RS256'] }) as {username: string};
-
-    req.username = decoded.username;
-    next();
+    const token = req.header('Authorization');
+    if (token) {
+      const tokenToVerify = token.replace('Bearer ', '');
+      jwt.verify(tokenToVerify, publicKey, { algorithms: ['RS256'] });
+      next();
+    } else if (req.signedCookies.pass) {
+      const tokenToVerify = req.signedCookies.pass;
+      jwt.verify(tokenToVerify, process.env.cookieSecret!);
+      next();
+    } else {
+      throw new Error();
+    }
   } catch (e) {
     res.status(401).send();
   }

@@ -5,6 +5,7 @@ import compression from 'compression';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import cookie from 'cookie-parser';
 
 // routers
 import userRouter from './routers/user';
@@ -24,16 +25,18 @@ const app: Application = express();
 const server = http.createServer(app);
 
 app.use(compression());
-app.use(cors());
+app.use(cors({
+  credentials: true,
+  origin: 'http://localhost:8080',
+}));
 app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookie(process.env.cookieSecret));
 
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
-
-app.use(express.static(path.join(__dirname, '../../media/class/hls')));
 
 app.use('/users', userRouter);
 app.use('/class', classRouter);

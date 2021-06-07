@@ -5,11 +5,12 @@ import fs from 'fs';
 import meter from 'stream-meter';
 import { nanoid } from 'nanoid';
 import ffmpeg from 'fluent-ffmpeg';
+import jwt from 'jsonwebtoken';
 
 import { Module } from '../models/Module';
 import { File } from '../models/File';
 
-import { auth } from '../middlewares/auth';
+import { auth, checkOnlyToken } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { premiumService } from '../middlewares/premium';
 
@@ -135,6 +136,28 @@ router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) =
   }
 });
 
+router.get('/cookie/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    const module = await Module.findOne({
+      where: {
+        classId: req.params.classId,
+        id: req.params.moduleId,
+      },
+    });
+
+    if (!module) {
+      res.status(404).send({ error: 'No such resource sound' });
+      return;
+    }
+
+    const token = jwt.sign({ c: module!.classId, m: module.id }, process.env.cookieSecret!);
+
+    res.cookie('pass', token, { signed: true }).send(module.id);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
 router.get('/preview/:classId/:previewFile', async (req, res) => {
   try {
     res.sendFile(`${previewFilePath}/${req.params.previewFile}`);
@@ -143,7 +166,7 @@ router.get('/preview/:classId/:previewFile', async (req, res) => {
   }
 });
 
-router.get('/:classId/:moduleId/:fileName', async (req, res) => {
+router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => {
   try {
     const filePath = path.join(__dirname, '../../../media/class/modules', req.params.fileName);
     const stat = fs.statSync(filePath);
