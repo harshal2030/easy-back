@@ -152,7 +152,9 @@ router.get('/cookie/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req,
 
     const token = jwt.sign({ c: module!.classId, m: module.id }, process.env.cookieSecret!);
 
-    res.cookie('pass', token, { signed: true }).send(module.id);
+    res.cookie(
+      'pass', token, { signed: true, sameSite: 'none', secure: process.env.NODE_ENV === 'production' },
+    ).send(module.id);
   } catch (e) {
     SendOnError(e, res);
   }
