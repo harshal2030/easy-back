@@ -3,9 +3,13 @@ import jwt from 'jsonwebtoken';
 import path from 'path';
 import fs from 'fs';
 
+import { Device } from './Device';
+import { Recovery } from './Recovery';
+
 import sequelize from '../db/index';
 import { usernamePattern } from '../utils/regexPatterns';
 import { generateHash } from '../utils/functions';
+import { Email } from '../services/Email';
 
 const privateKeyPath = path.join(__dirname, '../../../keys/private.pem');
 const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
@@ -68,6 +72,51 @@ class User extends Model implements UserAttr {
     }
 
     return { token: newToken, tokens: tokensArray };
+  }
+
+  public async sendResetCode(code: string) {
+    const t = await sequelize.transaction();
+    try {
+      const { email, username } = this;
+
+      const userRef = User.update({
+        tokens: [],
+      }, {
+        where: {
+          username,
+        },
+        transaction: t,
+      });
+
+      const deviceRef = Device.destroy({
+        where: {
+          username,
+        },
+        transaction: t,
+      });
+
+      const resetRef = Recovery.create({
+        email,
+        code,
+        used: false,
+      });
+
+      await Promise.all([userRef, deviceRef, resetRef]);
+      await t.commit();
+
+      Email.transporter.sendMail({
+        from: 'Easy Teach Password Assist <noreply@harshall.codes>',
+        to: email,
+        subject: 'Reset code',
+        html: `
+          Your code for password reset is: <b>${code}</b>.
+          <br />
+          This code will expire in 1 hour.
+        `,
+      });
+    } catch (e) {
+      await t.rollback();
+    }
   }
 
   public static async checkUsernameAndPass(username: string, password: string): Promise<User> {

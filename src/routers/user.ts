@@ -18,7 +18,6 @@ import { auth } from '../middlewares/auth';
 import { SendOnError } from '../utils/functions';
 import { avatarPath } from '../utils/paths';
 import { FileStorage } from '../services/FileStorage';
-import { Email } from '../services/Email';
 
 const router = express.Router();
 
@@ -129,7 +128,6 @@ router.post('/logout', auth, async (req, res) => {
     });
 
     if (!updated) {
-      console.log('no user');
       throw new Error();
     }
 
@@ -141,7 +139,6 @@ router.post('/logout', auth, async (req, res) => {
     });
 
     if (!deletedDevices) {
-      console.log('no device');
       throw new Error();
     }
 
@@ -149,7 +146,6 @@ router.post('/logout', auth, async (req, res) => {
 
     res.send();
   } catch (e) {
-    console.log(e);
     await t.rollback();
     SendOnError(e, res);
   }
@@ -191,36 +187,7 @@ router.post('/recover', accountAuth, async (req, res) => {
 
       const code = parseInt(buff.toString('hex'), 16).toString().substr(0, 6);
 
-      Email.transporter.sendMail({
-        from: 'Easy Teach Password Assist <noreply@harshall.codes>',
-        to: req.body.email,
-        subject: 'Reset code',
-        html: `
-          Your code for password reset is: <b>${code}</b>.
-          <br />
-          This code will expire in 1 hour.
-        `,
-      });
-
-      User.update({
-        tokens: [],
-      }, {
-        where: {
-          email: req.body.email,
-        },
-      });
-
-      Device.destroy({
-        where: {
-          username: user.username,
-        },
-      });
-
-      await Recovery.create({
-        email: user!.email,
-        code,
-        used: false,
-      });
+      await user.sendResetCode(code);
 
       return res.send();
     });
