@@ -129,6 +129,7 @@ router.post('/logout', auth, async (req, res) => {
     });
 
     if (!updated) {
+      console.log('no user');
       throw new Error();
     }
 
@@ -140,6 +141,7 @@ router.post('/logout', auth, async (req, res) => {
     });
 
     if (!deletedDevices) {
+      console.log('no device');
       throw new Error();
     }
 
