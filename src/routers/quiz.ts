@@ -83,12 +83,14 @@ router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, re
     });
 
     const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
-    const workbook = XLSX.read(files.sheet[0].buffer);
-    const sheets = workbook.SheetNames;
-    const queData = XLSX.utils.sheet_to_json<queSheet>(workbook.Sheets[sheets[0]]);
-    const formattedData = Question.formatQueSheet(queData, quiz.quizId);
+    if (files.sheet) {
+      const workbook = XLSX.read(files.sheet[0].buffer);
+      const sheets = workbook.SheetNames;
+      const queData = XLSX.utils.sheet_to_json<queSheet>(workbook.Sheets[sheets[0]]);
+      const formattedData = Question.formatQueSheet(queData, quiz.quizId);
 
-    await Question.bulkCreate(formattedData, { transaction: t });
+      await Question.bulkCreate(formattedData, { transaction: t });
+    }
     await t.commit();
 
     res.status(201).send(quiz);

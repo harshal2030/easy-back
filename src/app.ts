@@ -26,19 +26,11 @@ const server = http.createServer(app);
 
 app.use(compression());
 
-const whiteLists = process.env.NODE_ENV === 'production' ? ['https://test.harshall.codes', 'http://test.harshall.codes'] : ['http://localhost'];
+const whiteLists = process.env.NODE_ENV === 'production' ? ['https://test.harshall.codes', 'http://test.harshall.codes'] : ['http://localhost', 'http://localhost:8080', 'http://192.168.43.21:8080'];
 
 app.use(cors({
   credentials: true,
-  origin: (origin, callback) => {
-    if (whiteLists.indexOf(origin!) !== -1) {
-      callback(null, true);
-    } else if (!origin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by cors'));
-    }
-  },
+  origin: whiteLists,
 }));
 app.use(helmet());
 app.use(express.json());
