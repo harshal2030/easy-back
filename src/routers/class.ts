@@ -98,29 +98,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
 
 router.get('/', auth, async (req, res) => {
   try {
-    const classes = await Class.findAll({
-      where: {
-        [Op.or]: {
-          ownerRef: req.user!.username,
-          '$students.username$': req.user!.username,
-        },
-      },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payId', 'payedOn', 'planId', 'storageUsed'],
-      include: [
-        {
-          model: User,
-          as: 'owner',
-          required: true,
-          attributes: ['avatar', 'username', 'name'],
-        },
-        {
-          model: Student,
-          as: 'students',
-          attributes: [],
-          required: false,
-        },
-      ],
-    });
+    const classes = await Class.getUserClasses(req.user!.username);
 
     res.send(classes);
   } catch (e) {

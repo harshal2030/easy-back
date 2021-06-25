@@ -1,6 +1,12 @@
 /* eslint-disable no-unused-vars */
-import { UserAttr } from '../models/User';
+import { User, UserAttr } from '../models/User';
 import { ClassAttr } from '../models/Class';
+
+declare module 'socket.io/dist/socket' {
+  export interface Socket {
+    user?: User;
+  }
+}
 
 declare global {
   namespace Express {

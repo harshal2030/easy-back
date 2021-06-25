@@ -75,6 +75,34 @@ class Class extends Model implements ClassAttr {
     }
   }
 
+  public static async getUserClasses(username: string) {
+    const classes = await Class.findAll({
+      where: {
+        [Op.or]: {
+          ownerRef: username,
+          '$students.username$': username,
+        },
+      },
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payId', 'payedOn', 'planId', 'storageUsed'],
+      include: [
+        {
+          model: User,
+          as: 'owner',
+          required: true,
+          attributes: ['avatar', 'username', 'name'],
+        },
+        {
+          model: Student,
+          as: 'students',
+          attributes: [],
+          required: false,
+        },
+      ],
+    });
+
+    return classes;
+  }
+
   toJSON() {
     const expiredPlanClassesId: string[] = [];
 

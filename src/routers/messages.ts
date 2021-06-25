@@ -28,6 +28,19 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
       createdAt: message.createdAt.toString(),
     });
 
+    // // @ts-ignore
+    // req.socket.to(message.classId).emit('message', {
+    //   message: message.message,
+    //   user: {
+    //     name: req.user!.username,
+    //     username: req.user!.username,
+    //     avatar: req.user!.avatar,
+    //   },
+    //   classId: message.classId,
+    //   id: message.id,
+    //   createdAt: message.createdAt,
+    // });
+
     res.send({
       message: message.message,
       user: {

@@ -6,6 +6,10 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import cookie from 'cookie-parser';
+import { Server } from 'socket.io';
+
+import { WSAuth } from './middlewares/auth';
+import { Class } from './models/Class';
 
 // routers
 import userRouter from './routers/user';
@@ -31,6 +35,7 @@ const whiteLists = process.env.NODE_ENV === 'production' ? ['https://test.harsha
 app.use(cors({
   credentials: true,
   origin: whiteLists,
+  maxAge: 86400,
 }));
 app.use(helmet());
 app.use(express.json());
@@ -40,6 +45,21 @@ app.use(cookie(process.env.cookieSecret));
 if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('dev'));
 }
+
+const io = new Server(server, {
+  cors: {
+    origin: whiteLists,
+    credentials: true,
+  },
+});
+
+io.use(WSAuth);
+
+io.on('connection', async (socket) => {
+  const classes = await Class.getUserClasses(socket.user!.username);
+
+  socket.join(classes.map((cls) => cls.id));
+});
 
 app.use('/users', userRouter);
 app.use('/class', classRouter);
