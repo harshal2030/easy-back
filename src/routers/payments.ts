@@ -146,8 +146,10 @@ router.post('/order/:classId', auth, mustBeClassOwner, async (req, res) => {
         id: req.params.classId,
       },
       limit: 1,
+      transaction: t100,
     });
 
+    await t100.commit();
     res.send({
       proceedToPay: true,
       order: {
