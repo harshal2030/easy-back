@@ -24,6 +24,7 @@ import moduleRouter from './routers/module';
 import fileRouter from './routers/files';
 import vidTracker from './routers/videoTracker';
 import paymentRouter from './routers/payments';
+import { Student } from './models/Student';
 
 const app: Application = express();
 const server = http.createServer(app);
@@ -57,10 +58,32 @@ io.use(WSAuth);
 
 io.on('connection', async (socket) => {
   const classes = await Class.getUserClasses(socket.user!.username);
-
-  socket.on('class:join_create', (classId: string) => socket.join(classId));
-
   socket.join(classes.map((cls) => cls.id));
+
+  socket.on('class:join_create', async (classId: string) => {
+    const studentExists = await Student.findOne({
+      where: {
+        classId,
+        username: socket.user!.username,
+      },
+    });
+
+    if (studentExists) {
+      socket.join(classId);
+      return;
+    }
+
+    const classExists = await Class.findOne({
+      where: {
+        id: classId,
+        ownerRef: socket.user!.username,
+      },
+    });
+
+    if (classExists) {
+      socket.join(classId);
+    }
+  });
 });
 
 app.use((req, _res, next) => {
