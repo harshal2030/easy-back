@@ -37,6 +37,8 @@ router.post('/:classId/:moduleId/:videoId', auth, mustBeStudentOrOwner, async (r
       return;
     }
 
+    console.log(req.body);
+
     const now = new Date();
 
     sequelize.query(`UPDATE "VideoTrackers" SET start=:start, stop=:stop
@@ -56,7 +58,7 @@ router.post('/:classId/:moduleId/:videoId', auth, mustBeStudentOrOwner, async (r
       },
     });
 
-    res.send();
+    res.sendStatus(200);
   } catch (e) {
     SendOnError(e, res);
   }
