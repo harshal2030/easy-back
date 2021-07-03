@@ -90,6 +90,7 @@ router.post('/order/:classId', auth, mustBeClassOwner, async (req, res) => {
           payId,
           payedOn,
           storageUsed,
+          lockMsg,
         } = classToUpdate[1][0];
 
         res.send({
@@ -106,6 +107,7 @@ router.post('/order/:classId', auth, mustBeClassOwner, async (req, res) => {
             subject,
             joinCode,
             lockJoin,
+            lockMsg,
             storageUsed: parseInt(storageUsed, 10),
             owner: {
               username: req.user!.username,
@@ -260,6 +262,7 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
       payId,
       payedOn,
       storageUsed,
+      lockMsg,
     } = classToUpdate[1][0];
 
     res.send({
@@ -274,6 +277,7 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
       subject,
       joinCode,
       lockJoin,
+      lockMsg,
       storageUsed: parseInt(storageUsed, 10),
       owner: {
         username: req.user!.username,

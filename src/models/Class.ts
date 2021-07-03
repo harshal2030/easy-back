@@ -18,6 +18,7 @@ interface ClassAttr {
   joinCode: string;
   lockJoin: boolean;
   payId: string | null;
+  lockMsg: boolean;
   payedOn: Date | null;
   planId: 'free' | 'standard';
   storageUsed: string;
@@ -41,6 +42,8 @@ class Class extends Model implements ClassAttr {
   public joinCode!: string;
 
   public lockJoin!: boolean;
+
+  public lockMsg!: boolean;
 
   public payId!: string | null;
 
@@ -83,7 +86,7 @@ class Class extends Model implements ClassAttr {
           '$students.username$': username,
         },
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payId', 'payedOn', 'planId', 'storageUsed'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payId', 'payedOn', 'planId', 'storageUsed', 'lockMsg'],
       include: [
         {
           model: User,
@@ -132,6 +135,7 @@ class Class extends Model implements ClassAttr {
       storageUsed,
       createdAt,
       updatedAt,
+      lockMsg,
     } = this;
 
     return {
@@ -148,6 +152,7 @@ class Class extends Model implements ClassAttr {
       planId,
       owner,
       students,
+      lockMsg,
       storageUsed: parseInt(storageUsed, 10),
       updatedAt,
       createdAt,
@@ -214,6 +219,10 @@ Class.init({
     defaultValue: () => nanoid(12),
   },
   lockJoin: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  lockMsg: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
   },

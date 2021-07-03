@@ -70,6 +70,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       payedOn,
       planId,
       storageUsed,
+      lockMsg,
     } = classCreated;
 
     return res.status(201).send({
@@ -84,6 +85,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       payId,
       payedOn,
       planId,
+      lockMsg,
       storageUsed: parseInt(storageUsed, 10),
       owner: {
         username: req.user!.username,
@@ -112,7 +114,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
       where: {
         id: req.params.classId,
       },
-      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payedOn', 'planId', 'payId', 'storageUsed'],
+      attributes: ['id', 'name', 'about', 'photo', 'collaborators', 'subject', 'joinCode', 'lockJoin', 'payedOn', 'planId', 'payId', 'storageUsed', 'lockMsg'],
       include: [{
         model: User,
         as: 'owner',
@@ -202,7 +204,7 @@ router.post('/join', auth, async (req, res) => {
 router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res) => {
   const data = JSON.parse(req.body.info);
   const queries = Object.keys(data);
-  const allowedQueries = ['name', 'about', 'subject', 'lockJoin'];
+  const allowedQueries = ['name', 'about', 'subject', 'lockJoin', 'lockMsg'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
@@ -243,6 +245,7 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
       planId,
       payedOn,
       storageUsed,
+      lockMsg,
     } = classToUpdate[1][0];
 
     return res.send({
@@ -257,6 +260,7 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
       subject,
       joinCode,
       lockJoin,
+      lockMsg,
       owner: {
         username: req.user!.username,
         avatar: req.user!.avatar,
