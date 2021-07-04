@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.post('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
-    if (!(req.ownerClass!.ownerRef === req.user?.username || !req.ownerClass?.lockJoin)) {
+    if (req.ownerClass?.lockMsg && req.ownerClass.ownerRef !== req.user?.username) {
       res.status(401).send({ error: 'forbidden to use this resource' });
       return;
     }
