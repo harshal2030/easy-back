@@ -265,7 +265,9 @@ router.get('/que/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res)
       questions.forEach((que) => shuffleArray<string>(que.options));
     }
 
-    return res.send({ questions, totalScore, quizId: quiz.quizId });
+    return res.send({
+      questions, totalScore, quizId: quiz.quizId, quizTitle: quiz.title,
+    });
   } catch (e) {
     return SendOnError(e, res);
   }
