@@ -75,7 +75,7 @@ router.get('/file/:classId/:quizId', async (req, res) => {
 
     const stream: NodeJS.ReadWriteStream = XLSX.stream.to_csv(file);
 
-    res.setHeader('Content-disposition', `attachment; filename="${quiz.title}".csv`);
+    res.setHeader('Content-disposition', `attachment; filename="${quiz.title}.csv"`);
     res.set('Content-Type', 'text/csv');
     stream.pipe(res);
   } catch (e) {

@@ -12,6 +12,12 @@ const pptExtPattern = /\.(ppt|pptx)$/i;
 
 const legalExtPatterns = /\.(png|jpeg|jpg|gif|pdf|doc|docx|xls|xlsx|ppt|pptx|txt|mp4|mkv|mov|wmv)$/i;
 
+const videoExtPOSIX = '.[mp4|mkv|mov|wmv]$';
+const pdfExtPOSIX = '.pdf$';
+const docExtPOSIX = '.[doc|docx]$';
+const excelExtPOSIX = '.[xlsx|xls]$';
+const pptExtPOSIX = '.[ppt|pptx]$';
+
 export {
   usernamePattern,
   handlePattern,
@@ -23,4 +29,9 @@ export {
   videoExtPattern,
   staticImageExtPattern,
   legalExtPatterns,
+  videoExtPOSIX,
+  pdfExtPOSIX,
+  docExtPOSIX,
+  excelExtPOSIX,
+  pptExtPOSIX,
 };

@@ -6,6 +6,7 @@ import meter from 'stream-meter';
 import { nanoid } from 'nanoid';
 import ffmpeg from 'fluent-ffmpeg';
 import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
 
 import { Module } from '../models/Module';
 import { File } from '../models/File';
@@ -17,7 +18,9 @@ import { premiumService } from '../middlewares/premium';
 import { FileStorage } from '../services/FileStorage';
 
 import { SendOnError } from '../utils/functions';
-import { videoExtPattern } from '../utils/regexPatterns';
+import {
+  pdfExtPattern, videoExtPattern, videoExtPOSIX, pdfExtPOSIX,
+} from '../utils/regexPatterns';
 import { previewFilePath, modulePath } from '../utils/paths';
 import { plans } from '../utils/plans';
 
@@ -86,6 +89,30 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async
           fs.unlink(saveTo, () => null);
           errored = true;
         });
+      } else if (filename.match(pdfExtPattern)) {
+        const filenameToSave = `${nanoid()}.${path.extname(filename)}`;
+        const filePath = `${modulePath}/${filenameToSave}`;
+        const stream = fs.createWriteStream(filePath);
+
+        file.pipe(m).pipe(stream).on('finish', async () => {
+          if (m.bytes > (plans.standard.storage - parseInt(req.ownerClass!.storageUsed, 10))) {
+            errored = true;
+            FileStorage.deleteFileFromPath(filePath);
+            return;
+          }
+
+          try {
+            await File.create({
+              moduleId: req.params.moduleId,
+              filename: filenameToSave,
+              fileSize: m.bytes,
+              title: data.title,
+            });
+          } catch (e) {
+            errored = true;
+            FileStorage.deleteFileFromPath(filePath);
+          }
+        });
       } else {
         errored = true;
       }
@@ -111,6 +138,10 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async
 
 router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
+    const type = typeof req.query.t === 'string' ? req.query.t : 'video';
+
+    const POSIX = type === 'video' ? videoExtPOSIX : pdfExtPOSIX;
+
     const module = await Module.findOne({
       where: {
         classId: req.params.classId,
@@ -125,6 +156,9 @@ router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) =
     const files = await File.findAll({
       where: {
         moduleId: req.params.moduleId,
+        filename: {
+          [Op.iRegexp]: POSIX,
+        },
       },
       attributes: { exclude: ['updatedAt'] },
       order: [['createdAt', 'DESC']],
