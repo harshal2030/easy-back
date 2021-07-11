@@ -12,7 +12,6 @@ import { Class } from '../models/Class';
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { SendOnError, shuffleArray } from '../utils/functions';
-import { oneMonthDiff } from '../utils/plans';
 
 const router = express.Router();
 
@@ -36,7 +35,7 @@ const mediaMiddleware = upload.fields([
 router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res) => {
   const data = JSON.parse(req.body.info);
   const queries = Object.keys(data);
-  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomQue', 'randomOp', 'multipleSubmit'];
+  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomQue', 'randomOp', 'showScore'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
@@ -59,18 +58,6 @@ router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, re
 
     if (quizCreatedCount >= 10 && req.ownerClass!.planId === 'free') {
       res.status(400).send({ error: 'Test quota limit reached for this class' });
-      return;
-    }
-
-    if (!req.ownerClass!.payId) {
-      res.status(400).send({ error: 'Class seats quota limit reached' });
-      return;
-    }
-
-    const timePassed = new Date().getTime() - req.ownerClass!.payedOn!.getTime();
-
-    if (timePassed > oneMonthDiff) {
-      res.status(400).send({ error: 'Class seats quota limit reached' });
       return;
     }
 
