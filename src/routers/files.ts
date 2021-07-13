@@ -6,18 +6,22 @@ import meter from 'stream-meter';
 import { nanoid } from 'nanoid';
 import ffmpeg from 'fluent-ffmpeg';
 import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
+import mime from 'mime-types';
 
 import { Module } from '../models/Module';
 import { File } from '../models/File';
 
-import { auth, checkOnlyToken } from '../middlewares/auth';
+import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { premiumService } from '../middlewares/premium';
 
 import { FileStorage } from '../services/FileStorage';
 
 import { SendOnError } from '../utils/functions';
-import { videoExtPattern } from '../utils/regexPatterns';
+import {
+  pdfExtPattern, videoExtPattern, videoExtPOSIX, pdfExtPOSIX,
+} from '../utils/regexPatterns';
 import { previewFilePath, modulePath } from '../utils/paths';
 import { plans } from '../utils/plans';
 
@@ -86,6 +90,30 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async
           fs.unlink(saveTo, () => null);
           errored = true;
         });
+      } else if (filename.match(pdfExtPattern)) {
+        const filenameToSave = `${nanoid()}${path.extname(filename)}`;
+        const filePath = `${modulePath}/${filenameToSave}`;
+        const stream = fs.createWriteStream(filePath);
+
+        file.pipe(m).pipe(stream).on('finish', async () => {
+          if (m.bytes > (plans.standard.storage - parseInt(req.ownerClass!.storageUsed, 10))) {
+            errored = true;
+            FileStorage.deleteFileFromPath(filePath);
+            return;
+          }
+
+          try {
+            await File.create({
+              moduleId: req.params.moduleId,
+              filename: filenameToSave,
+              fileSize: m.bytes,
+              title: data.title,
+            });
+          } catch (e) {
+            errored = true;
+            FileStorage.deleteFileFromPath(filePath);
+          }
+        });
       } else {
         errored = true;
       }
@@ -111,6 +139,10 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async
 
 router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
+    const type = typeof req.query.t === 'string' ? req.query.t : 'video';
+
+    const POSIX = type === 'video' ? videoExtPOSIX : pdfExtPOSIX;
+
     const module = await Module.findOne({
       where: {
         classId: req.params.classId,
@@ -125,6 +157,9 @@ router.get('/:classId/:moduleId', auth, mustBeStudentOrOwner, async (req, res) =
     const files = await File.findAll({
       where: {
         moduleId: req.params.moduleId,
+        filename: {
+          [Op.iRegexp]: POSIX,
+        },
       },
       attributes: { exclude: ['updatedAt'] },
       order: [['createdAt', 'DESC']],
@@ -168,14 +203,14 @@ router.get('/preview/:classId/:previewFile', async (req, res) => {
   }
 });
 
-router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => {
+router.get('/:classId/:moduleId/:fileName', async (req, res) => {
   try {
     const filePath = path.join(__dirname, '../../../media/class/modules', req.params.fileName);
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
     const { range } = req.headers;
 
-    if (range) {
+    if (range && req.params.fileName.match(videoExtPattern)) {
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
@@ -199,8 +234,9 @@ router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => 
     } else {
       const head = {
         'Content-Length': fileSize,
-        'Content-Type': 'video/mp4',
+        'Content-Type': mime.contentType(path.extname(req.params.fileName)) as string,
       };
+
       res.writeHead(200, head);
       fs.createReadStream(filePath).pipe(res);
     }
