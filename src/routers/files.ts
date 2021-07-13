@@ -7,11 +7,12 @@ import { nanoid } from 'nanoid';
 import ffmpeg from 'fluent-ffmpeg';
 import jwt from 'jsonwebtoken';
 import { Op } from 'sequelize';
+import mime from 'mime-types';
 
 import { Module } from '../models/Module';
 import { File } from '../models/File';
 
-import { auth, checkOnlyToken } from '../middlewares/auth';
+import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { premiumService } from '../middlewares/premium';
 
@@ -90,7 +91,7 @@ router.post('/:classId/:moduleId', auth, mustBeClassOwner, premiumService, async
           errored = true;
         });
       } else if (filename.match(pdfExtPattern)) {
-        const filenameToSave = `${nanoid()}.${path.extname(filename)}`;
+        const filenameToSave = `${nanoid()}${path.extname(filename)}`;
         const filePath = `${modulePath}/${filenameToSave}`;
         const stream = fs.createWriteStream(filePath);
 
@@ -202,14 +203,14 @@ router.get('/preview/:classId/:previewFile', async (req, res) => {
   }
 });
 
-router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => {
+router.get('/:classId/:moduleId/:fileName', async (req, res) => {
   try {
     const filePath = path.join(__dirname, '../../../media/class/modules', req.params.fileName);
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
     const { range } = req.headers;
 
-    if (range) {
+    if (range && req.params.fileName.match(videoExtPattern)) {
       const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
@@ -233,8 +234,9 @@ router.get('/:classId/:moduleId/:fileName', checkOnlyToken, async (req, res) => 
     } else {
       const head = {
         'Content-Length': fileSize,
-        'Content-Type': 'video/mp4',
+        'Content-Type': mime.contentType(path.extname(req.params.fileName)) as string,
       };
+
       res.writeHead(200, head);
       fs.createReadStream(filePath).pipe(res);
     }
