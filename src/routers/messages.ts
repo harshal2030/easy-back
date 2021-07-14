@@ -18,6 +18,7 @@ router.post('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
       return;
     }
 
+    console.log(req.body);
     const message = await Announcement.create({
       message: req.body.message,
       author: req.user!.username,
