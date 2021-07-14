@@ -13,12 +13,10 @@ const router = express.Router();
 router.post('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
     if (req.ownerClass?.lockMsg && req.ownerClass.ownerRef !== req.user?.username) {
-      console.log('forbidden');
       res.status(401).send({ error: 'forbidden to use this resource' });
       return;
     }
 
-    console.log(req.body);
     const message = await Announcement.create({
       message: req.body.message,
       author: req.user!.username,
@@ -61,7 +59,6 @@ router.post('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
       createdAt: message.createdAt,
     });
   } catch (e) {
-    console.log(e);
     SendOnError(e, res);
   }
 });
