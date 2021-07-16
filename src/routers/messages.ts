@@ -1,4 +1,5 @@
 import express from 'express';
+import { Op } from 'sequelize';
 
 import { Announcement } from '../models/Announcement';
 import { User } from '../models/User';
@@ -65,10 +66,23 @@ router.post('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
 
 router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
-    const msgs = await Announcement.findAll({
+    const after = typeof req.query.after === 'string' ? req.query.after : null;
+
+    const afterMessage = after ? await Announcement.findOne({
       where: {
-        classId: req.params.classId,
+        id: after,
       },
+    }) : null;
+
+    const where = afterMessage ? {
+      classId: req.params.classId,
+      createdAt: {
+        [Op.lt]: afterMessage.createdAt,
+      },
+    } : { classId: req.params.classId };
+
+    const msgs = await Announcement.findAll({
+      where,
       include: [
         {
           model: User,
@@ -79,6 +93,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
       ],
       attributes: ['createdAt', 'message', 'id'],
       order: [['createdAt', 'DESC']],
+      limit: 10,
     });
 
     res.send(msgs);
