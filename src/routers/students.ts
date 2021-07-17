@@ -11,11 +11,14 @@ const router = express.Router();
 
 router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
+    const offset = typeof req.query.offset === 'string' ? parseInt(req.query.offset, 10) : 0;
+
     const students = await Student.findAll({
       where: {
         classId: req.params.classId,
       },
       attributes: [],
+      order: [[{ model: User, as: 'student' }, 'name']],
       include: [
         {
           model: User,
@@ -24,6 +27,8 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
           required: true,
         },
       ],
+      offset,
+      limit: 10,
     });
 
     res.send(students.map((ppl) => ({
