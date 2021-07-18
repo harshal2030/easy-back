@@ -1,5 +1,6 @@
 import express from 'express';
 import { nanoid } from 'nanoid';
+import XLSX from 'xlsx';
 import sequelize from '../db';
 
 import { Module } from '../models/Module';
@@ -57,6 +58,47 @@ router.post('/:classId/:moduleId/:videoId', auth, mustBeStudentOrOwner, async (r
     });
 
     res.sendStatus(200);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
+router.get('/file/:classId/:moduleId/:videoId', async (req, res) => {
+  try {
+    const [module, file] = await Promise.all([
+      Module.findOne({
+        where: {
+          classId: req.params.classId,
+          id: req.params.moduleId,
+        },
+      }),
+      File.findOne({
+        where: {
+          id: req.params.videoId,
+          moduleId: req.params.moduleId,
+        },
+      }),
+    ]);
+
+    if (!(module || file)) {
+      res.status(400).send({ error: 'No such resource found' });
+      return;
+    }
+
+    const fileData = await sequelize.query(`SELECT u."name", ROUND(EXTRACT(epoch FROM (v.stop - v.start))/60) "Minutes Spent",
+    TO_CHAR(v."createdAt", 'DD/MM/YYYY') "Date" FROM "VideoTrackers" v INNER JOIN "Users" u
+    USING (username) WHERE v."videoId" = :videoId ORDER BY u.name;`, {
+      replacements: { videoId: file!.id },
+      nest: true,
+    });
+
+    const fileToSend = XLSX.utils.json_to_sheet(fileData);
+
+    const stream: NodeJS.ReadWriteStream = XLSX.stream.to_csv(fileToSend);
+
+    res.setHeader('Content-disposition', `attachment; filename="${req.params.videoId}.csv"`);
+    res.set('Content-Type', 'text/csv');
+    stream.pipe(res);
   } catch (e) {
     SendOnError(e, res);
   }
