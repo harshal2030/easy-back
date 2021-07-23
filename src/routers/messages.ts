@@ -1,8 +1,11 @@
 import express from 'express';
+import { nanoid } from 'nanoid';
 import { Op } from 'sequelize';
 
 import { Announcement } from '../models/Announcement';
 import { User } from '../models/User';
+import { Class } from '../models/Class';
+import sequelize from '../db';
 
 import { Notification } from '../services/Notification';
 import { auth } from '../middlewares/auth';
@@ -59,6 +62,61 @@ router.post('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
       id: message.id,
       createdAt: message.createdAt,
     });
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
+router.get('/unread', auth, async (req, res) => {
+  try {
+    const classes = await Class.getUserClasses(req.user!.username);
+    const classIds = classes.map((cls) => cls.id);
+
+    const unreads = await sequelize.query(`SELECT COUNT(u.id) unreads, "classId" FROM "Unreads" u INNER JOIN "Announcements" a USING ("classId")
+    WHERE u."lastMessageRead" < a."createdAt" AND username=:username AND "classId" IN (:classIds)
+    GROUP BY "classId";`, {
+      replacements: {
+        classIds,
+        username: req.user!.username,
+      },
+      raw: true,
+      nest: true,
+      logging: console.log,
+    }) as unknown as {classId: string; unreads: number}[];
+
+    const dataToSend: {[classId: string]: {classId: string; unread: number}} = {};
+
+    unreads.forEach((un: {classId: string; unreads: number}) => {
+      dataToSend[un.classId] = {
+        unread: un.unreads,
+        classId: un.classId,
+      };
+    });
+
+    res.send(dataToSend);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
+router.post('/unread/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    await sequelize.query(`UPDATE "Unreads" SET username=:username, "lastMessageRead"=:lastMessage
+    WHERE username=:username AND "classId"=:classId AND "lastMessageRead" < :lastMessage;
+    INSERT INTO "Unreads" (id, username, "classId", "lastMessageRead", "createdAt")
+    SELECT :id, :username, :classId, :lastMessage, :createdAt
+    WHERE NOT EXISTS(SELECT id FROM "Unreads" WHERE
+    username=:username AND "classId"=:classId)`, {
+      replacements: {
+        id: nanoid(),
+        username: req.user!.username,
+        lastMessage: req.body.lastMessageDate,
+        classId: req.ownerClass!.id,
+        createdAt: new Date(),
+      },
+    });
+
+    res.sendStatus(200);
   } catch (e) {
     SendOnError(e, res);
   }
