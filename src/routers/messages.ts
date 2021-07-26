@@ -83,7 +83,6 @@ router.get('/unread', auth, async (req, res) => {
       },
       raw: true,
       nest: true,
-      logging: console.log,
     }) as unknown as {classId: string; unreads: number}[];
 
     const dataToSend: {[classId: string]: {classId: string; unread: number}} = {};
