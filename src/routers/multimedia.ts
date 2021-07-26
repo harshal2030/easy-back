@@ -27,6 +27,14 @@ router.get('/avatar/:filename', async (req, res) => {
   }
 });
 
+router.get('/class/avatar', async (_req, res) => {
+  try {
+    res.sendFile(`${classImagePath}/default.png`);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
 router.get('/class/avatar/:filename', async (req, res) => {
   try {
     res.sendFile(`${classImagePath}/${req.params.filename}`);
