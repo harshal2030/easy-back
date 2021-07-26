@@ -21,6 +21,27 @@ class Unread extends Model implements UnreadAttr {
   public readonly createdAt!: Date;
 
   public readonly updatedAt!: Date;
+
+  static async updateUnread(username: string, classId: string, lastMessageDate: Date) {
+    try {
+      await sequelize.query(`UPDATE "Unreads" SET username=:username, "lastMessageRead"=:lastMessage
+    WHERE username=:username AND "classId"=:classId AND "lastMessageRead" < :lastMessage;
+    INSERT INTO "Unreads" (id, username, "classId", "lastMessageRead", "createdAt")
+    SELECT :id, :username, :classId, :lastMessage, :createdAt
+    WHERE NOT EXISTS(SELECT id FROM "Unreads" WHERE
+    username=:username AND "classId"=:classId)`, {
+        replacements: {
+          id: nanoid(),
+          username,
+          lastMessage: lastMessageDate,
+          classId,
+          createdAt: new Date(),
+        },
+      });
+    } catch (e) {
+      // nothing to do
+    }
+  }
 }
 
 Unread.init({

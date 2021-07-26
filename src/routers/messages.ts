@@ -1,10 +1,10 @@
 import express from 'express';
-import { nanoid } from 'nanoid';
 import { Op } from 'sequelize';
 
 import { Announcement } from '../models/Announcement';
 import { User } from '../models/User';
 import { Class } from '../models/Class';
+import { Unread } from '../models/Unread';
 import sequelize from '../db';
 
 import { Notification } from '../services/Notification';
@@ -51,6 +51,8 @@ router.post('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
         classId: message.classId,
       },
     });
+
+    Unread.updateUnread(req.user!.username, req.ownerClass!.id, new Date());
 
     res.send({
       message: message.message,
@@ -101,20 +103,7 @@ router.get('/unread', auth, async (req, res) => {
 
 router.post('/unread/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
-    await sequelize.query(`UPDATE "Unreads" SET username=:username, "lastMessageRead"=:lastMessage
-    WHERE username=:username AND "classId"=:classId AND "lastMessageRead" < :lastMessage;
-    INSERT INTO "Unreads" (id, username, "classId", "lastMessageRead", "createdAt")
-    SELECT :id, :username, :classId, :lastMessage, :createdAt
-    WHERE NOT EXISTS(SELECT id FROM "Unreads" WHERE
-    username=:username AND "classId"=:classId)`, {
-      replacements: {
-        id: nanoid(),
-        username: req.user!.username,
-        lastMessage: req.body.lastMessageDate,
-        classId: req.ownerClass!.id,
-        createdAt: new Date(),
-      },
-    });
+    await Unread.updateUnread(req.user!.username, req.ownerClass!.id, req.body.lastMessageDate);
 
     res.sendStatus(200);
   } catch (e) {
