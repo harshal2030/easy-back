@@ -108,43 +108,6 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
-  try {
-    if (req.ownerClass!.name !== req.body.class) {
-      res.status(400).send({ error: 'Unable to find requested resource' });
-      return;
-    }
-
-    const user = await User.findOne({
-      where: {
-        [Op.or]: {
-          username: req.body.user,
-          email: req.body.user,
-        },
-      },
-    });
-
-    if (!user) {
-      res.status(400).send({ error: 'Unable to find requested resource' });
-      return;
-    }
-
-    const classToUpdate = await Class.update({
-      ownerRef: req.body.user,
-    }, {
-      where: {
-        id: req.params.classId,
-      },
-      returning: true,
-      limit: 1,
-    });
-
-    res.send(classToUpdate[1][0].id);
-  } catch (e) {
-    SendOnError(e, res);
-  }
-});
-
 router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
     const class2 = await Class.findOne({
@@ -307,6 +270,43 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
     });
   } catch (e) {
     return SendOnError(e, res);
+  }
+});
+
+router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
+  try {
+    if (req.ownerClass!.name !== req.body.class) {
+      res.status(400).send({ error: 'Unable to find requested resource' });
+      return;
+    }
+
+    const user = await User.findOne({
+      where: {
+        [Op.or]: {
+          username: req.body.user,
+          email: req.body.user,
+        },
+      },
+    });
+
+    if (!user) {
+      res.status(400).send({ error: 'Unable to find requested resource' });
+      return;
+    }
+
+    const classToUpdate = await Class.update({
+      ownerRef: req.body.user,
+    }, {
+      where: {
+        id: req.params.classId,
+      },
+      returning: true,
+      limit: 1,
+    });
+
+    res.send(classToUpdate[1][0].id);
+  } catch (e) {
+    SendOnError(e, res);
   }
 });
 
