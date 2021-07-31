@@ -6,6 +6,7 @@ import { Op } from 'sequelize';
 import { Class } from '../models/Class';
 import { User } from '../models/User';
 import { Student } from '../models/Student';
+import sequelize from '../db';
 
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
@@ -274,6 +275,7 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
 });
 
 router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     if (req.ownerClass!.name !== req.body.class) {
       res.status(400).send({ error: 'Unable to find requested resource' });
@@ -302,10 +304,23 @@ router.post('/:classId', auth, mustBeClassOwner, async (req, res) => {
       },
       returning: true,
       limit: 1,
+      transaction: t,
     });
+
+    await Student.destroy({
+      where: {
+        username: req.body.user,
+        classId: req.params.classId,
+      },
+      limit: 1,
+      transaction: t,
+    });
+
+    await t.commit();
 
     res.send(classToUpdate[1][0].id);
   } catch (e) {
+    await t.rollback();
     SendOnError(e, res);
   }
 });
