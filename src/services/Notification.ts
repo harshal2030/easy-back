@@ -4,7 +4,10 @@ import { Device } from '../models/Device';
 
 class Notification {
   static async sendMsgToAllClassMember(
-    classId: string, title: string, body?: string, data?: {[field: string]: string},
+    classId: string,
+    classOwner: string,
+    title: string,
+    body?: string, data?: {[field: string]: string},
   ) {
     const userTokens = await Student.findAll({
       where: {
@@ -21,9 +24,19 @@ class Notification {
       ],
     });
 
+    const owner = await Device.findOne({
+      where: {
+        username: classOwner,
+      },
+    });
+
     const tokens = userTokens
       .map((user) => user.device!.fcmToken)
       .filter((token) => token.trim().length !== 0);
+
+    if (owner) {
+      tokens.push(owner.fcmToken);
+    }
 
     if (tokens.length !== 0 && process.env.NODE_ENV !== 'test') {
       firebase.messaging().sendMulticast({

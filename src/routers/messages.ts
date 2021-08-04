@@ -27,7 +27,7 @@ router.post('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
       classId: req.params.classId,
     });
 
-    Notification.sendMsgToAllClassMember(req.params.classId, `${req.user!.username} made a Announcement`, message.message, {
+    Notification.sendMsgToAllClassMember(req.params.classId, req.ownerClass!.ownerRef, `${req.user!.username} made a Announcement`, message.message, {
       message: message.message,
       name: req.user!.name,
       username: req.user!.username,
