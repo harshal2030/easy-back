@@ -10,6 +10,7 @@ import { Server } from 'socket.io';
 
 import { WSAuth } from './middlewares/auth';
 import { Class } from './models/Class';
+import { Student } from './models/Student';
 
 // routers
 import userRouter from './routers/user';
@@ -24,7 +25,6 @@ import moduleRouter from './routers/module';
 import fileRouter from './routers/files';
 import vidTracker from './routers/videoTracker';
 import paymentRouter from './routers/payments';
-import { Student } from './models/Student';
 
 const app: Application = express();
 const server = http.createServer(app);

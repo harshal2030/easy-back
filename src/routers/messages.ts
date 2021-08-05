@@ -69,6 +69,33 @@ router.post('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
   }
 });
 
+router.delete('/:classId/:msgId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    const isOwner = req.user!.username === req.ownerClass!.ownerRef;
+    const destroyOptions = isOwner ? {
+      id: req.params.msgId, classId: req.params.classId,
+    } : { id: req.params.msgId, classId: req.params.classId, author: req.user!.username };
+
+    const destroyedMsg = await Announcement.destroy({ where: destroyOptions });
+
+    if (!destroyedMsg) {
+      res.status(400).send({ error: 'No such resource' });
+      return;
+    }
+
+    req.io.to(req.params.classId).emit('message:delete', {
+      type: 'message:delete',
+      payload: {
+        classId: req.params.classId,
+        msgId: req.params.msgId,
+      },
+    });
+    res.send(req.params.msgId);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
 router.get('/unread', auth, async (req, res) => {
   try {
     const classes = await Class.getUserClasses(req.user!.username);
