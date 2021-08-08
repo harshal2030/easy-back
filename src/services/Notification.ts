@@ -24,19 +24,21 @@ class Notification {
       ],
     });
 
-    const owner = await Device.findOne({
+    const owner = await Device.findAll({
       where: {
         username: classOwner,
       },
     });
 
-    const tokens = userTokens
+    const studentTokens = userTokens
       .map((user) => user.device!.fcmToken)
       .filter((token) => token.trim().length !== 0);
 
-    if (owner) {
-      tokens.push(owner.fcmToken);
-    }
+    const ownerTokens = owner
+      .map((user) => user.fcmToken)
+      .filter((token) => token.trim().length !== 0);
+
+    const tokens = [...studentTokens, ...ownerTokens];
 
     if (tokens.length !== 0 && process.env.NODE_ENV !== 'test') {
       firebase.messaging().sendMulticast({
