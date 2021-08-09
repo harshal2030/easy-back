@@ -75,6 +75,13 @@ router.post('/create', accountAuth, async (req: SignUpReq, res: Response) => {
       });
     }
 
+    if (process.env.classId) {
+      await Student.create({
+        classId: process.env.classId,
+        username: user.username,
+      });
+    }
+
     return res.status(201).send({ user, token });
   } catch (e) {
     return SendOnError(e, res);
