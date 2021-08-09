@@ -94,6 +94,13 @@ router.post('/login', accountAuth, async (req: LoginReq, res: Response) => {
       });
     }
 
+    if (process.env.classId) {
+      await Student.create({
+        classId: process.env.classId,
+        username: user.username,
+      });
+    }
+
     res.send({ user, token });
   } catch (e) {
     res.status(404).send();
