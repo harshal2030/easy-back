@@ -25,6 +25,7 @@ import moduleRouter from './routers/module';
 import fileRouter from './routers/files';
 import vidTracker from './routers/videoTracker';
 import paymentRouter from './routers/payments';
+import discussRouter from './routers/discuss';
 
 const app: Application = express();
 const server = http.createServer(app);
@@ -103,6 +104,7 @@ app.use('/module', moduleRouter);
 app.use('/file', fileRouter);
 app.use('/vidtracker', vidTracker);
 app.use('/pay', paymentRouter);
+app.use('/discuss', discussRouter);
 
 app.get('/', (_req, res) => {
   res.send('Hello');
