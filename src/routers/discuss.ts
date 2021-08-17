@@ -1,4 +1,5 @@
 import express from 'express';
+import { Op, literal } from 'sequelize';
 
 import { Discuss } from '../models/Discuss';
 import { Message } from '../models/Message';
@@ -8,6 +9,7 @@ import { mustBeStudentOrOwner } from '../middlewares/userLevels';
 import { auth } from '../middlewares/auth';
 
 import { SendOnError } from '../utils/functions';
+import { User } from '../models/User';
 
 const router = express.Router();
 
@@ -67,12 +69,51 @@ router.get('/:classId/:discussId', auth, mustBeStudentOrOwner, async (req, res) 
   }
 });
 
+router.get('/msg/:classId/:discussId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    const after = typeof req.query.after === 'string' ? req.query.after : null;
+
+    const afterMessage = after ? await Message.findOne({
+      where: {
+        discussId: req.params.discussId,
+        id: after,
+      },
+    }) : null;
+
+    const where = afterMessage ? {
+      discussId: req.params.discussId,
+      createdAt: {
+        [Op.lt]: afterMessage.createdAt,
+      },
+    } : { discussId: req.params.discussId };
+
+    const messages = await Message.findAll({
+      where,
+      limit: 20,
+      attributes: [['id', '_id'], ['message', 'text'], 'createdAt'],
+      include: [
+        {
+          model: User,
+          as: 'user',
+          required: true,
+          attributes: [[literal('"user"."username"'), '_id'], 'name', 'avatar'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    res.send(messages);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
 router.post('/msg/:classId/:discussId', auth, mustBeStudentOrOwner, async (req, res) => {
   try {
     const discussExists = await Discuss.findOne({
       where: {
         classId: req.params.classId,
-        discussId: req.params.discussId,
+        id: req.params.discussId,
       },
     });
 
@@ -84,6 +125,18 @@ router.post('/msg/:classId/:discussId', auth, mustBeStudentOrOwner, async (req, 
     const chat = await Message.create({
       discussId: discussExists.id,
       message: req.body.message,
+      author: req.user!.username,
+    });
+
+    req.io.to(req.params.classId).except(`${req.query.sid}`).emit(chat.discussId, {
+      text: chat.message,
+      user: {
+        _id: req.user!.username,
+        name: req.user!.name,
+        avatar: req.user!.avatar,
+      },
+      createdAt: chat.createdAt,
+      _id: chat.id,
     });
 
     res.send(chat);

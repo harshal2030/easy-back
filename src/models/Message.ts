@@ -1,12 +1,14 @@
 import { DataTypes, Model } from 'sequelize';
 import { nanoid } from 'nanoid';
 
+import { User } from './User';
 import sequelize from '../db';
 
 interface MessageAttr {
   id: string;
   discussId: string;
   message: string;
+  author: string;
   file: string | null;
 }
 
@@ -16,6 +18,8 @@ class Message extends Model implements MessageAttr {
   public discussId!: string;
 
   public message!: string;
+
+  public author!: string;
 
   public file!: string | null;
 
@@ -41,6 +45,17 @@ Message.init({
       },
     },
   },
+  author: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      check(value: string) {
+        if (value.trim().length < 1) {
+          throw new Error('Invalid user');
+        }
+      },
+    },
+  },
   message: {
     type: DataTypes.TEXT,
     allowNull: false,
@@ -59,6 +74,12 @@ Message.init({
 }, {
   sequelize,
   timestamps: true,
+});
+
+Message.belongsTo(User, {
+  as: 'user',
+  targetKey: 'username',
+  foreignKey: 'author',
 });
 
 export { Message, MessageAttr };
