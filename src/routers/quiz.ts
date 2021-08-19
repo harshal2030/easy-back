@@ -162,7 +162,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
             classId: req.params.classId,
           },
           order: [['createdAt', 'DESC']],
-          attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
+          attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore', 'allowBlur'],
         });
       } else {
         response.live = await Quiz.findAll({
@@ -175,7 +175,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
             classId: req.params.classId,
           },
           order: [['createdAt', 'DESC']],
-          attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
+          attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore', 'allowBlur'],
         });
       }
     }
@@ -191,7 +191,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
           classId: req.params.classId,
         },
         order: [['createdAt', 'DESC']],
-        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
+        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore', 'allowBlur'],
       });
     }
 
@@ -203,7 +203,7 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
           '$result.responder$': req.user!.username,
         },
         order: [['createdAt', 'DESC']],
-        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore'],
+        attributes: ['classId', 'quizId', 'title', 'description', 'timePeriod', 'releaseScore', 'allowBlur'],
         include: [
           {
             model: Result,

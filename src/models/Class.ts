@@ -22,6 +22,7 @@ interface ClassAttr {
   payedOn: Date | null;
   planId: 'free' | 'standard';
   storageUsed: string;
+  hasSheet: boolean;
 }
 
 class Class extends Model implements ClassAttr {
@@ -52,6 +53,8 @@ class Class extends Model implements ClassAttr {
   public planId!: 'free' | 'standard';
 
   public storageUsed!: string;
+
+  public hasSheet!: boolean;
 
   public readonly createdAt!: Date;
 
@@ -253,6 +256,11 @@ Class.init({
   storageUsed: {
     type: DataTypes.BIGINT,
     defaultValue: 0,
+    allowNull: false,
+  },
+  hasSheet: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
     allowNull: false,
   },
 }, {
