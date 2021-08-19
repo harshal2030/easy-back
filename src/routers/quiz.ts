@@ -8,6 +8,8 @@ import { Question, queSheet } from '../models/Questions';
 import { Quiz } from '../models/Quiz';
 import { Result } from '../models/Result';
 import { Class } from '../models/Class';
+import { Blurred } from '../models/Blurred';
+import { Student } from '../models/Student';
 
 import { auth } from '../middlewares/auth';
 import { mustBeClassOwner, mustBeStudentOrOwner } from '../middlewares/userLevels';
@@ -35,7 +37,7 @@ const mediaMiddleware = upload.fields([
 router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res) => {
   const data = JSON.parse(req.body.info);
   const queries = Object.keys(data);
-  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomQue', 'randomOp', 'showScore'];
+  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomQue', 'randomOp', 'showScore', 'allowBlur'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
@@ -83,6 +85,51 @@ router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, re
     res.status(201).send(quiz);
   } catch (e) {
     await t.rollback();
+    SendOnError(e, res);
+  }
+});
+
+router.post('/blur/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    const quizExists = await Quiz.findOne({
+      where: {
+        classId: req.params.classId,
+        quizId: req.params.quizId,
+      },
+    });
+
+    if (!quizExists) {
+      res.status(400).send({ error: 'No such resource exists' });
+      return;
+    }
+
+    if (quizExists.allowBlur) {
+      res.status(400).send({ error: 'No such operation exists' });
+      return;
+    }
+
+    const student = await Student.findOne({
+      where: {
+        classId: req.ownerClass!.id,
+        username: req.user!.username,
+      },
+    });
+
+    if (
+      req.user!.username !== req.ownerClass!.ownerRef
+      && req.user!.username !== student?.username
+    ) {
+      res.status(400).send({ error: 'No such operation exists' });
+      return;
+    }
+
+    await Blurred.create({
+      username: req.user!.username,
+      quizId: quizExists.quizId,
+    });
+
+    res.sendStatus(200);
+  } catch (e) {
     SendOnError(e, res);
   }
 });
@@ -202,13 +249,29 @@ router.get('/que/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res)
     });
 
     if (!quiz) {
-      return res.status(404).send({ error: 'No such quiz found' });
+      res.status(404).send({ error: 'No such quiz found' });
+      return;
     }
 
     const now = new Date().getTime();
 
     if (quiz.timePeriod[0].value.getTime() > now || quiz.timePeriod[1].value.getTime() < now) {
-      return res.status(400).send({ error: 'No longer accepting response' });
+      res.status(400).send({ error: 'No longer accepting response' });
+      return;
+    }
+
+    if (!quiz.allowBlur) {
+      const blurExists = await Blurred.findOne({
+        where: {
+          username: req.user!.username,
+          quizId: quiz.quizId,
+        },
+      });
+
+      if (blurExists) {
+        res.status(400).send({ error: 'You cannot submit the test now' });
+        return;
+      }
     }
 
     let questions;
@@ -241,7 +304,8 @@ router.get('/que/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res)
       });
 
       if (hasSubmitted) {
-        return res.status(400).send({ error: 'You have already responded' });
+        res.status(400).send({ error: 'You have already responded' });
+        return;
       }
     }
 
@@ -252,11 +316,11 @@ router.get('/que/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res)
       questions.forEach((que) => shuffleArray<string>(que.options));
     }
 
-    return res.send({
-      questions, totalScore, quizId: quiz.quizId, quizTitle: quiz.title,
+    res.send({
+      questions, totalScore, quizId: quiz.quizId, quizTitle: quiz.title, allowBlur: quiz.allowBlur,
     });
   } catch (e) {
-    return SendOnError(e, res);
+    SendOnError(e, res);
   }
 });
 
@@ -270,13 +334,15 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
     });
 
     if (!quiz) {
-      return res.status(404).send({ error: 'No such quiz found' });
+      res.status(404).send({ error: 'No such quiz found' });
+      return;
     }
 
     const now = new Date().getTime();
 
     if (quiz.timePeriod[0].value.getTime() > now || quiz.timePeriod[1].value.getTime() < now) {
-      return res.status(400).send({ error: 'No longer accepting response' });
+      res.status(400).send({ error: 'No longer accepting response' });
+      return;
     }
 
     if (!quiz.multipleSubmit) {
@@ -288,7 +354,22 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
       });
 
       if (hasSubmitted) {
-        return res.status(400).send({ error: 'You have already responded' });
+        res.status(400).send({ error: 'You have already responded' });
+        return;
+      }
+    }
+
+    if (!quiz.allowBlur) {
+      const blurExists = await Blurred.findOne({
+        where: {
+          username: req.user!.username,
+          quizId: quiz.quizId,
+        },
+      });
+
+      if (blurExists) {
+        res.status(400).send({ error: 'You cannot submit the test now' });
+        return;
       }
     }
 
@@ -298,19 +379,19 @@ router.post('/:classId/:quizId', auth, mustBeStudentOrOwner, async (req, res) =>
       response: req.body.response,
     });
 
-    return res.send({ releaseScore: quiz.releaseScore });
+    res.send({ releaseScore: quiz.releaseScore });
   } catch (e) {
-    return SendOnError(e, res);
+    SendOnError(e, res);
   }
 });
 
 router.put('/:classId/:quizId', auth, mustBeClassOwner, async (req, res) => {
   const queries = Object.keys(req.body);
-  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomOp', 'randomQue', 'multipleSubmit'];
+  const allowedQueries = ['questions', 'title', 'description', 'timePeriod', 'releaseScore', 'randomOp', 'randomQue', 'multipleSubmit', 'allowBlur'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
-    return res.send({ error: 'Bad request parameters' });
+    return res.status(400).send({ error: 'Bad request parameters' });
   }
   try {
     const range = req.body.timePeriod ? [
