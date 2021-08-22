@@ -19,6 +19,7 @@ interface QuizAttr {
   randomQue: boolean;
   randomOp: boolean;
   multipleSubmit: boolean;
+  allowBlur: boolean;
 }
 
 class Quiz extends Model implements QuizAttr {
@@ -35,6 +36,8 @@ class Quiz extends Model implements QuizAttr {
   public timePeriod!: [{value: Date; inclusive: boolean }, {value: Date; inclusive: boolean}];
 
   public releaseScore!: boolean;
+
+  public allowBlur!: boolean;
 
   public randomQue!: boolean;
 
@@ -93,6 +96,11 @@ Quiz.init({
   multipleSubmit: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
+  },
+  allowBlur: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true,
   },
 }, {
   sequelize,

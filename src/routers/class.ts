@@ -15,6 +15,7 @@ import { FileStorage } from '../services/FileStorage';
 import { SendOnError } from '../utils/functions';
 import { classImagePath } from '../utils/paths';
 import { oneMonthDiff } from '../utils/plans';
+import { AllowedPeople } from '../models/AllowedPeople';
 
 const router = express.Router();
 
@@ -165,7 +166,7 @@ router.post('/join', auth, async (req, res) => {
       return;
     }
 
-    if (studentsInClass >= 1000) {
+    if (studentsInClass >= 500) {
       if (!classToJoin.payedOn) {
         res.status(400).send({ error: 'Class seats quota limit reached' });
         return;
@@ -189,6 +190,20 @@ router.post('/join', auth, async (req, res) => {
     if (alreadyJoined) {
       res.status(400).send();
       return;
+    }
+
+    if (classToJoin.hasSheet) {
+      const isPresent = await AllowedPeople.findOne({
+        where: {
+          classId: classToJoin.id,
+          email: req.user!.email,
+        },
+      });
+
+      if (!isPresent) {
+        res.status(400).send({ error: 'You cannot join this class' });
+        return;
+      }
     }
 
     await Student.create({

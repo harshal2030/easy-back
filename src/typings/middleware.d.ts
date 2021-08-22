@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { Server } from 'socket.io';
 import { User, UserAttr } from '../models/User';
-import { ClassAttr } from '../models/Class';
+import { Class } from '../models/Class';
 
 declare module 'socket.io/dist/socket' {
   export interface Socket {
@@ -14,7 +14,7 @@ declare global {
     export interface Request {
       user?: UserAttr, // available with every auth middleware
       token?: string, // available with every auth middleware
-      ownerClass?: ClassAttr, // only available with mustBeClassOwner middleware
+      ownerClass?: Class,
       username?: string, // only available with checkWithToken middleware
       io: Server;
     }
