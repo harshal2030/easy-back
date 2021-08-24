@@ -10,7 +10,7 @@ interface DiscussAttr {
   title: string;
   private: boolean;
   closed: boolean;
-  closedPermanent: boolean;
+  locked: boolean;
   tags: string[];
 }
 
@@ -27,7 +27,7 @@ class Discuss extends Model implements DiscussAttr {
 
   public closed!: boolean;
 
-  public closedPermanent!: boolean;
+  public locked!: boolean;
 
   public tags!: string[];
 
@@ -67,9 +67,16 @@ Discuss.init({
   title: {
     type: DataTypes.STRING(52),
     allowNull: false,
+    validate: {
+      check(value: string) {
+        if (value.trim().length < 1 || value.trim().length > 50) {
+          throw new Error('Title too large, must be within 50 character long');
+        }
+      },
+    },
   },
   private: {
-    type: DataTypes.STRING,
+    type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false,
   },
@@ -78,7 +85,7 @@ Discuss.init({
     allowNull: false,
     defaultValue: false,
   },
-  closedPermanent: {
+  locked: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
     defaultValue: false,

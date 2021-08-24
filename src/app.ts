@@ -20,11 +20,13 @@ import quizRouter from './routers/quiz';
 import queRouter from './routers/question';
 import studentRouter from './routers/students';
 import resultRouter from './routers/result';
-import messageRouter from './routers/messages';
+import announceRouter from './routers/announce';
 import moduleRouter from './routers/module';
 import fileRouter from './routers/files';
 import vidTracker from './routers/videoTracker';
 import paymentRouter from './routers/payments';
+import discussRouter from './routers/discuss';
+import messageRouter from './routers/messages';
 
 const app: Application = express();
 const server = http.createServer(app);
@@ -91,18 +93,20 @@ app.use((req, _res, next) => {
   next();
 });
 
+app.use('/msg', announceRouter);
 app.use('/users', userRouter);
 app.use('/class', classRouter);
 app.use('/media', mediaRouter);
+app.use('/discuss', discussRouter);
 app.use('/quiz', quizRouter);
 app.use('/que', queRouter);
 app.use('/student', studentRouter);
 app.use('/result', resultRouter);
-app.use('/msg', messageRouter);
 app.use('/module', moduleRouter);
 app.use('/file', fileRouter);
 app.use('/vidtracker', vidTracker);
 app.use('/pay', paymentRouter);
+app.use('/message', messageRouter);
 
 app.get('/', (_req, res) => {
   res.send('Hello');

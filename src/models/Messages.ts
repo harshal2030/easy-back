@@ -1,6 +1,8 @@
 import { Model, DataTypes } from 'sequelize';
 import { nanoid } from 'nanoid';
 
+import { User } from './User';
+
 import sequelize from '../db';
 
 interface MessageAttr {
@@ -74,6 +76,12 @@ Message.init({
 }, {
   sequelize,
   timestamps: true,
+});
+
+Message.belongsTo(User, {
+  as: 'user',
+  targetKey: 'username',
+  foreignKey: 'author',
 });
 
 export { Message, MessageAttr };
