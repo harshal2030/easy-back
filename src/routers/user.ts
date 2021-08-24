@@ -93,6 +93,14 @@ router.post('/login', accountAuth, async (req: LoginReq, res: Response) => {
     const user = await User.checkUsernameAndPass(req.body.user.username, req.body.user.password);
     const token = await user.generateJwt();
 
+    if (req.body.device) {
+      Device.create({
+        ...req.body.device,
+        username: req.body.user.username,
+        token,
+      });
+    }
+
     res.send({ user, token });
   } catch (e) {
     res.status(404).send();
