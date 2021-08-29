@@ -1,6 +1,8 @@
 import { Model, DataTypes } from 'sequelize';
 import { nanoid } from 'nanoid';
 
+import { User } from './User';
+
 import sequelize from '../db';
 
 interface DiscussAttr {
@@ -98,6 +100,12 @@ Discuss.init({
 }, {
   sequelize,
   timestamps: true,
+});
+
+Discuss.belongsTo(User, {
+  as: 'user',
+  targetKey: 'username',
+  foreignKey: 'author',
 });
 
 export { Discuss, DiscussAttr };

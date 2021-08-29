@@ -1,5 +1,6 @@
 import express from 'express';
 
+import { User } from '../models/User';
 import { Discuss } from '../models/Discuss';
 import sequelize from '../db';
 
@@ -53,6 +54,28 @@ router.get('/:classId', auth, mustBeStudentOrOwner, async (req, res) => {
     });
 
     res.send(discussions);
+  } catch (e) {
+    SendOnError(e, res);
+  }
+});
+
+router.get('/:classId/:discussId', auth, mustBeStudentOrOwner, async (req, res) => {
+  try {
+    const discussion = await Discuss.findOne({
+      where: {
+        id: req.params.discussId,
+        classId: req.params.classId,
+      },
+      attributes: { exclude: ['updatedAt', 'author'] },
+      include: [{
+        model: User,
+        as: 'user',
+        required: true,
+        attributes: ['name', 'username', 'avatar'],
+      }],
+    });
+
+    res.send(discussion);
   } catch (e) {
     SendOnError(e, res);
   }
