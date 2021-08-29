@@ -56,7 +56,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
     }
 
     const classCreated = await Class.create({
-      ...data, ownerRef: req.user!.username, photo: fileName,
+      ...data, ownerRef: req.user!.username, photo: fileName, lockMsg: true,
     });
 
     const {
