@@ -127,6 +127,7 @@ router.post('/order/:classId', auth, mustBeClassOwner, async (req, res) => {
       currency: 'INR',
       notes: {
         plan,
+        user: req.user!.username,
       },
     };
 
