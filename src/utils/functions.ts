@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { ValidationError, UniqueConstraintError, ForeignKeyConstraintError } from 'sequelize';
 import { SHA512 } from 'crypto-js';
 
-const SendOnError = (e: Error, res: Response): Response<any> => {
+const SendOnError = (e: unknown, res: Response): Response<any> => {
   if (e instanceof ValidationError) {
     return res.status(400).send({ error: e.message.replace('Validation error: ', '') });
   }
