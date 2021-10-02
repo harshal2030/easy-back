@@ -74,6 +74,14 @@ Message.init({
     allowNull: true,
   },
 }, {
+  validate: {
+    // eslint-disable-next-line no-unused-vars
+    checkMessage(this: MessageAttr) {
+      if (!this.file && this.message.trim().length === 0) {
+        throw new Error('Invalid message');
+      }
+    },
+  },
   sequelize,
   timestamps: true,
 });
