@@ -23,6 +23,7 @@ interface ClassAttr {
   planId: 'free' | 'standard';
   storageUsed: string;
   hasSheet: boolean;
+  type: 'public' | 'public-paid' | 'private-paid' | 'private';
 }
 
 class Class extends Model implements ClassAttr {
@@ -55,6 +56,8 @@ class Class extends Model implements ClassAttr {
   public storageUsed!: string;
 
   public hasSheet!: boolean;
+
+  public type!: 'public' | 'public-paid' | 'private-paid' | 'private';
 
   public readonly createdAt!: Date;
 
@@ -139,6 +142,7 @@ class Class extends Model implements ClassAttr {
       createdAt,
       updatedAt,
       lockMsg,
+      type,
     } = this;
 
     return {
@@ -154,6 +158,7 @@ class Class extends Model implements ClassAttr {
       photo,
       planId,
       owner,
+      type,
       students,
       lockMsg,
       storageUsed: parseInt(storageUsed, 10),
@@ -262,6 +267,11 @@ Class.init({
     type: DataTypes.BOOLEAN,
     defaultValue: false,
     allowNull: false,
+  },
+  type: {
+    type: DataTypes.ENUM('public', 'public-paid', 'private-paid', 'private'),
+    allowNull: false,
+    defaultValue: 'public',
   },
 }, {
   sequelize,

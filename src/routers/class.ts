@@ -39,12 +39,13 @@ const mediaMiddleware = upload.fields([
 router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
   const data = JSON.parse(req.body.info);
   const queries = Object.keys(data);
-  const allowedQueries = ['name', 'about', 'subject', 'lockJoin'];
+  const allowedQueries = ['name', 'about', 'subject', 'lockJoin', 'type'];
   const isValid = queries.every((query) => allowedQueries.includes(query));
 
   if (!isValid) {
     return res.status(400).send({ error: 'Invalid param sent' });
   }
+
   try {
     const files = req.files as unknown as { [fieldname: string]: Express.Multer.File[] };
     let fileName = '';
@@ -72,6 +73,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       payedOn,
       planId,
       storageUsed,
+      type,
       lockMsg,
     } = classCreated;
 
@@ -87,6 +89,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       payId,
       payedOn,
       planId,
+      type,
       lockMsg,
       storageUsed: parseInt(storageUsed, 10),
       owner: {
@@ -262,6 +265,7 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
       payedOn,
       storageUsed,
       lockMsg,
+      type,
     } = classToUpdate[1][0];
 
     return res.send({
@@ -271,6 +275,7 @@ router.put('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, res
       payId,
       payedOn,
       planId,
+      type,
       photo,
       collaborators,
       subject,
