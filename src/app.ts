@@ -104,6 +104,11 @@ app.use('/file', fileRouter);
 app.use('/vidtracker', vidTracker);
 app.use('/pay', paymentRouter);
 
+app.post('/config', async (req, res) => {
+  console.log(req.body);
+  res.send();
+});
+
 app.get('/', (_req, res) => {
   res.send('Hello');
 });
