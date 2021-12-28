@@ -99,6 +99,7 @@ router.post('/', auth, mediaMiddleware, async (req: Request, res: Response) => {
       },
     });
   } catch (e) {
+    console.log(e);
     return SendOnError(e, res);
   }
 });
