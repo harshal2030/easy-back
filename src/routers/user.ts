@@ -192,7 +192,6 @@ router.post('/recover', accountAuth, async (req, res) => {
       return res.send();
     });
   } catch (e) {
-    console.log(e);
     return SendOnError(e, res);
   }
 });
