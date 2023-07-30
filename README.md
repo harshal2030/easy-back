@@ -103,3 +103,7 @@ npm start
 ```
 
 **Note**: The app might crash when you run the above command for the first time. Don't panic; just run the command once again. This is because the `build` folder wouldn't exist on the first run as TypeScript needs to be compiled.
+
+# Misc
+
+I've been also thinking on open sourcing the app and website. Feel free to open issue if you have any questions or need any help.
