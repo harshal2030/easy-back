@@ -78,6 +78,7 @@ router.post('/:classId', auth, mustBeClassOwner, mediaMiddleware, async (req, re
       const queData = XLSX.utils.sheet_to_json<queSheet>(workbook.Sheets[sheets[0]]);
       const formattedData = Question.formatQueSheet(queData, quiz.quizId);
 
+      // @ts-ignore
       await Question.bulkCreate(formattedData, { transaction: t });
     }
     await t.commit();
