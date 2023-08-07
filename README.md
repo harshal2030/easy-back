@@ -47,7 +47,7 @@ npm install
 Then one level outside of the root, run following commands
 
 ```shell
-mkdir media/{users/{avatar,images},class/{docs,images,videos}}
+mkdir -p media/{users/{avatar,images},class/{docs,images,videos}}
 mkdir keys
 cd keys
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out private.pem
