@@ -31,7 +31,7 @@ const server = http.createServer(app);
 
 app.use(compression());
 
-const whiteLists = process.env.NODE_ENV === 'production' ? ['https://easyteach.inddex.co', 'http://easyteach.inddex.co'] : ['http://localhost', 'http://localhost:8080', 'http://192.168.43.21:8080'];
+const whiteLists = process.env.NODE_ENV === 'production' ? ['https://easyteach.quirky-craft.com', 'http://easyteach.quirky-craft.com'] : ['http://localhost', 'http://localhost:8080', 'http://192.168.43.21:8080'];
 
 app.use(cors({
   credentials: true,
